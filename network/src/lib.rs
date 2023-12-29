@@ -1,5 +1,5 @@
-use std::{io::prelude::*, net::ToSocketAddrs};
 use std::net::TcpStream;
+use std::{io::prelude::*, net::ToSocketAddrs};
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ struct Header {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[repr(u32)]
+#[repr(C)]
 pub enum Type {
     // value used for initializations
     Default,
@@ -48,7 +48,7 @@ where
         return Err(anyhow!(format!("couldn't send: {e:?}")));
     }
 
-    let (res, res_type)  = match recv(&mut stream) {
+    let (res, res_type) = match recv(&mut stream) {
         Ok(r) => r,
         Err(e) => return Err(anyhow!(format!("couldn't recv: {e:?}"))),
     };
@@ -61,32 +61,32 @@ where
 }
 
 pub fn send(stream: &mut TcpStream, h_type: Type, buf: &[u8]) -> Result<()> {
-    let h = Header { size: buf.len(), h_type };
+    let h = Header {
+        size: buf.len(),
+        h_type,
+    };
+    let h = bincode::serialize(&h)?;
 
-    stream.write_all(as_u8(&h))?;
+    stream.write_all(&h)?;
     stream.write_all(&buf)?;
 
     Ok(())
 }
 
 pub fn recv(stream: &mut TcpStream) -> Result<(Vec<u8>, Type)> {
-    let mut h = Header { size: 0, h_type: Type::Default };
+    let h = Header {
+        size: 0,
+        h_type: Type::Default,
+    };
+    let mut h = vec![0u8; bincode::serialized_size(&h)? as usize];
+    stream.read_exact(&mut h)?;
 
-    stream.read_exact(as_u8_mut(&mut h))?;
+    let h: Header = bincode::deserialize(&h)?;
 
     let mut buf = vec![0u8; h.size];
-
     stream.read_exact(&mut buf)?;
 
     Ok((buf, h.h_type))
-}
-
-fn as_u8<T: Sized>(p: &T) -> &[u8] {
-    unsafe { std::slice::from_raw_parts((p as *const T) as *const u8, std::mem::size_of::<T>()) }
-}
-
-fn as_u8_mut<T: Sized>(p: &mut T) -> &mut [u8] {
-    unsafe { std::slice::from_raw_parts_mut((p as *mut T) as *mut u8, std::mem::size_of::<T>()) }
 }
 
 #[cfg(test)]
