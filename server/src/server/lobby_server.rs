@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 use super::ServerT;
-use network::{recv, send, Type};
+use network::{SendRecv,Type};
 
 pub struct LobbyServer {
     pub server: Arc<Mutex<TcpListener>>,
@@ -93,7 +93,7 @@ fn handle_connection(
 ) -> Result<()> {
     println!("new client: {addr:?}");
 
-    let (buf, req_type) = match recv(client) {
+    let (buf, req_type) = match client.recv() {
         Ok(res) => res,
         Err(e) => return Err(anyhow!(format!("couldn't send: {e:?}"))),
     };
@@ -103,7 +103,7 @@ fn handle_connection(
         _ => (Type::Error, bincode::serialize("invalid request")?),
     };
 
-    if let Err(e) = send(client, res_type, &res) {
+    if let Err(e) = client.send(res_type, &res) {
         return Err(anyhow!(format!("couldn't send: {e:?}")));
     }
 

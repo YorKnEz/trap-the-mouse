@@ -44,11 +44,11 @@ where
 
     let req = bincode::serialize(req)?;
 
-    if let Err(e) = send(&mut stream, h_type, &req) {
+    if let Err(e) = stream.send(h_type, &req) {
         return Err(anyhow!(format!("couldn't send: {e:?}")));
     }
 
-    let (res, res_type) = match recv(&mut stream) {
+    let (res, res_type) = match stream.recv() {
         Ok(r) => r,
         Err(e) => return Err(anyhow!(format!("couldn't recv: {e:?}"))),
     };
@@ -60,34 +60,42 @@ where
     Ok(bincode::deserialize(&res)?)
 }
 
-pub fn send(stream: &mut TcpStream, h_type: Type, buf: &[u8]) -> Result<()> {
-    let h = Header {
-        size: buf.len(),
-        h_type,
-    };
-    let h = bincode::serialize(&h)?;
-
-    stream.write_all(&h)?;
-    stream.write_all(&buf)?;
-
-    Ok(())
+pub trait SendRecv {
+    fn send(&mut self, h_type: Type, buf: &[u8]) -> Result<()>;
+    fn recv(&mut self) -> Result<(Vec<u8>, Type)>;
 }
 
-pub fn recv(stream: &mut TcpStream) -> Result<(Vec<u8>, Type)> {
-    let h = Header {
-        size: 0,
-        h_type: Type::Default,
-    };
-    let mut h = vec![0u8; bincode::serialized_size(&h)? as usize];
-    stream.read_exact(&mut h)?;
+impl SendRecv for TcpStream {
+    fn send(&mut self, h_type: Type, buf: &[u8]) -> Result<()> {
+        let h = Header {
+            size: buf.len(),
+            h_type,
+        };
+        let h = bincode::serialize(&h)?;
 
-    let h: Header = bincode::deserialize(&h)?;
+        self.write_all(&h)?;
+        self.write_all(&buf)?;
 
-    let mut buf = vec![0u8; h.size];
-    stream.read_exact(&mut buf)?;
+        Ok(())
+    }
 
-    Ok((buf, h.h_type))
+    fn recv(&mut self) -> Result<(Vec<u8>, Type)> {
+        let h = Header {
+            size: 0,
+            h_type: Type::Default,
+        };
+        let mut h = vec![0u8; bincode::serialized_size(&h)? as usize];
+        self.read_exact(&mut h)?;
+
+        let h: Header = bincode::deserialize(&h)?;
+
+        let mut buf = vec![0u8; h.size];
+        self.read_exact(&mut buf)?;
+
+        Ok((buf, h.h_type))
+    }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -102,14 +110,14 @@ mod tests {
         let (mut server, _addr) = _server.accept().unwrap();
 
         let msg = "test message";
-        send(&mut client, Type::Ping, msg.as_bytes()).unwrap();
+        client.send(Type::Ping, msg.as_bytes()).unwrap();
 
-        let (buf, req_type) = recv(&mut server).unwrap();
+        let (buf, req_type) = server.recv().unwrap();
         assert_eq!(req_type, Type::Ping);
 
-        send(&mut server, Type::Success, &buf).unwrap();
+        server.send(Type::Success, &buf).unwrap();
 
-        let (buf, _) = recv(&mut client).unwrap();
+        let (buf, _) = client.recv().unwrap();
 
         assert_eq!(String::from_utf8(buf).unwrap(), msg);
     }

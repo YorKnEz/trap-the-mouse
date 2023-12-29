@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 use super::{LobbyServer, ServerT};
-use network::{recv, send, Type};
+use network::{SendRecv, Type};
 
 pub struct Server {
     server: Arc<Mutex<TcpListener>>,
@@ -99,19 +99,19 @@ fn handle_connection(
 ) -> Result<()> {
     println!("new client: {addr:?}");
 
-    let (buf, req_type) = match recv(client) {
+    let (buf, req_type) = match client.recv() {
         Ok(res) => res,
         Err(e) => return Err(anyhow!(format!("couldn't send: {e:?}"))),
     };
 
     let (res_type, res) = match req_type {
-        Type::Ping => { execute(buf, req_ping)? },
-        Type::CreateLobby => { execute_stateful(buf, req_create_lobby, _state)? }
-        Type::DeleteLobby => { execute_stateful(buf, req_delete_lobby, _state)? }
+        Type::Ping => execute(buf, req_ping)?,
+        Type::CreateLobby => execute_stateful(buf, req_create_lobby, _state)?,
+        Type::DeleteLobby => execute_stateful(buf, req_delete_lobby, _state)?,
         _ => (Type::Error, bincode::serialize("invalid request")?),
     };
 
-    if let Err(e) = send(client, res_type, &res) {
+    if let Err(e) = client.send(res_type, &res) {
         return Err(anyhow!(format!("couldn't send: {e:?}")));
     }
 
@@ -132,7 +132,11 @@ where
     }
 }
 
-fn execute_stateful<R, S>(buf: Vec<u8>, handler: fn(R, &mut ServerState) -> Result<S>, _state: &Arc<Mutex<ServerState>>) -> Result<(Type, Vec<u8>)>
+fn execute_stateful<R, S>(
+    buf: Vec<u8>,
+    handler: fn(R, &mut ServerState) -> Result<S>,
+    _state: &Arc<Mutex<ServerState>>,
+) -> Result<(Type, Vec<u8>)>
 where
     R: for<'a> Deserialize<'a>,
     S: Serialize,
@@ -177,4 +181,3 @@ fn req_create_lobby(_: Vec<u8>, state: &mut ServerState) -> Result<SocketAddr> {
 fn req_delete_lobby(_: u32, _: &mut ServerState) -> Result<()> {
     Ok(())
 }
-
