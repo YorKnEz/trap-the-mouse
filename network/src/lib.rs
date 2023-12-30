@@ -1,5 +1,6 @@
 // TODO: optimize allocations for packet reading, it isnt necessary to allocate on each recv
 
+use std::io;
 use std::net::TcpStream;
 use std::{io::prelude::*, net::ToSocketAddrs};
 
@@ -41,7 +42,12 @@ where
 {
     let mut stream = match TcpStream::connect(addr) {
         Ok(c) => c,
-        Err(e) => return Err(anyhow!(format!("couldn't connect: {e:?}"))),
+        Err(e) => {
+            if e.kind() == io::ErrorKind::ConnectionRefused {
+                return Err(anyhow!(format!("server is offline")))
+            }
+            return Err(anyhow!(format!("couldn't connect: {e:?}")))
+        }
     };
 
     let req = bincode::serialize(req)?;
