@@ -1,3 +1,5 @@
+// TODO: optimize allocations for packet reading, it isnt necessary to allocate on each recv
+
 use std::net::TcpStream;
 use std::{io::prelude::*, net::ToSocketAddrs};
 
@@ -8,7 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 #[repr(C)]
 struct Header {
-    size: usize,
+    size: u32,
     h_type: Type,
 }
 
@@ -68,7 +70,7 @@ pub trait SendRecv {
 impl SendRecv for TcpStream {
     fn send(&mut self, h_type: Type, buf: &[u8]) -> Result<()> {
         let h = Header {
-            size: buf.len(),
+            size: buf.len() as u32,
             h_type,
         };
         let h = bincode::serialize(&h)?;
@@ -80,22 +82,17 @@ impl SendRecv for TcpStream {
     }
 
     fn recv(&mut self) -> Result<(Vec<u8>, Type)> {
-        let h = Header {
-            size: 0,
-            h_type: Type::Default,
-        };
-        let mut h = vec![0u8; bincode::serialized_size(&h)? as usize];
+        let mut h = vec![0u8; std::mem::size_of::<Header>()];
         self.read_exact(&mut h)?;
 
         let h: Header = bincode::deserialize(&h)?;
 
-        let mut buf = vec![0u8; h.size];
+        let mut buf = vec![0u8; h.size as usize];
         self.read_exact(&mut buf)?;
 
         Ok((buf, h.h_type))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
