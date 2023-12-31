@@ -1,11 +1,11 @@
-mod server;
+// use server::{Server, ServerT};
+use core::*;
 
-use server::{Server, ServerT};
+// mod server;
+mod core;
 
 fn main() {
-    let server = Server::new("127.0.0.1:20000");
+    let server = Server::new("127.0.0.1:20000").unwrap();
 
-    server.start();
-
-    server.drop();
+    server.start().unwrap();
 }

@@ -8,7 +8,11 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.76"
 thiserror = "1.0"
-network = { path = "../network" }
+
+ctrlc = "3.4"                       # handle ctrl c signal for graceful shutdown
+
 bincode = "1.3.3"
 serde = "1"
 serde_derive = "1"
+
+network = { path = "../network" }
