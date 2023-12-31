@@ -12,7 +12,7 @@ use crate::core::{
     LobbyVec,
 };
 
-use super::Request;
+use super::{Request, error::ServerError};
 
 pub struct CreateLobbyRequest {
     stream: TcpStream,
@@ -29,7 +29,7 @@ impl CreateLobbyRequest {
         }
     }
 
-    fn handler(&self) -> Result<SocketAddr> {
+    fn handler(&self) -> Result<(u16, SocketAddr), ServerError> {
         let id = {
             let mut id = self.id.lock().unwrap();
             let ret = *id;
@@ -51,7 +51,7 @@ impl CreateLobbyRequest {
             lobbies.push((id, addr, running, handle));
         }
 
-        Ok(addr)
+        Ok((id, addr))
     }
 }
 
@@ -61,7 +61,10 @@ impl Request for CreateLobbyRequest {
             Ok(res) => (Type::Success, bincode::serialize(&res)?),
             Err(e) => {
                 println!("couldn't create lobby: {e:?}");
-                (Type::Error, bincode::serialize("internal error")?)
+                match e {
+                    ServerError::Internal(_) => (Type::Error, bincode::serialize("internal error")?),
+                    ServerError::API { message } => (Type::Error, bincode::serialize(&message)?)
+                }
             }
         };
 

@@ -5,7 +5,7 @@ use network::{SendRecv, Type};
 
 use crate::core::LobbyVec;
 
-use super::Request;
+use super::{error::ServerError, Request};
 
 pub struct DeleteLobbyRequest {
     stream: TcpStream,
@@ -22,14 +22,18 @@ impl DeleteLobbyRequest {
         }
     }
 
-    fn handler(&self) -> Result<()> {
+    fn handler(&self) -> Result<(), ServerError> {
         let mut lobbies = self.lobbies.lock().unwrap();
         let index = match lobbies.iter().position(|(id, _, _, _)| *id == self.id) {
             Some(index) => index,
-            None => return Err(anyhow!(format!("lobby not found"))),
+            None => {
+                return Err(ServerError::API {
+                    message: "lobby not found".to_string(),
+                })
+            }
         };
 
-        let (_, _, running, handle) = lobbies.remove(index);
+        let (id, _, running, handle) = lobbies.remove(index);
 
         {
             let mut running = running.lock().unwrap();
@@ -37,7 +41,7 @@ impl DeleteLobbyRequest {
         }
 
         match handle.join() {
-            Ok(_) => {}
+            Ok(_) => println!("lobby {id} shut down"),
             Err(e) => println!("lobby thread panicked: {e:?}"),
         }
 
@@ -51,7 +55,10 @@ impl Request for DeleteLobbyRequest {
             Ok(res) => (Type::Success, bincode::serialize(&res)?),
             Err(e) => {
                 println!("couldn't delete lobby: {e:?}");
-                (Type::Error, bincode::serialize("internal error")?)
+                match e {
+                    ServerError::Internal(_) => (Type::Error, bincode::serialize("internal error")?),
+                    ServerError::API { message } => (Type::Error, bincode::serialize(&message)?)
+                }
             }
         };
 

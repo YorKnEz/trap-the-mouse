@@ -3,6 +3,7 @@ mod delete_lobby;
 mod exit;
 mod invalid;
 mod ping;
+mod error;
 
 use anyhow::Result;
 
