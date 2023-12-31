@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 
 use super::lobby::LobbyId;
 use super::request_handlers::{
-    CreateLobbyRequest, DeleteLobbyRequest, InvalidRequest, PingRequest,
+    CreateLobbyRequest, DeleteLobbyRequest, GetLobbiesRequest, InvalidRequest, PingRequest,
 };
 use super::{BoolMutex, RequestHandler, RequestQueueItem, ServerCore};
 use network::{SendRecv, Type};
@@ -36,6 +36,11 @@ impl RequestHandler for Server {
                 Arc::clone(&self.lobbies),
             )),
             Type::DeleteLobby => Box::new(DeleteLobbyRequest::new(
+                stream,
+                bincode::deserialize(&buf)?,
+                Arc::clone(&self.lobbies),
+            )),
+            Type::GetLobbies => Box::new(GetLobbiesRequest::new(
                 stream,
                 bincode::deserialize(&buf)?,
                 Arc::clone(&self.lobbies),

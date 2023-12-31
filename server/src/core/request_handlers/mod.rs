@@ -1,5 +1,6 @@
 mod create_lobby;
 mod delete_lobby;
+mod get_lobbies;
 mod exit;
 mod invalid;
 mod ping;
@@ -9,6 +10,7 @@ use anyhow::Result;
 
 pub use create_lobby::CreateLobbyRequest;
 pub use delete_lobby::DeleteLobbyRequest;
+pub use get_lobbies::GetLobbiesRequest;
 pub use exit::ExitRequest;
 pub use invalid::InvalidRequest;
 pub use ping::PingRequest;
