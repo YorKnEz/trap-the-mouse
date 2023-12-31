@@ -44,9 +44,9 @@ where
         Ok(c) => c,
         Err(e) => {
             if e.kind() == io::ErrorKind::ConnectionRefused {
-                return Err(anyhow!(format!("server is offline")))
+                return Err(anyhow!(format!("server is offline")));
             }
-            return Err(anyhow!(format!("couldn't connect: {e:?}")))
+            return Err(anyhow!(format!("couldn't connect: {e:?}")));
         }
     };
 
@@ -82,7 +82,7 @@ impl SendRecv for TcpStream {
         let h = bincode::serialize(&h)?;
 
         self.write_all(&h)?;
-        self.write_all(&buf)?;
+        self.write_all(buf)?;
 
         Ok(())
     }
