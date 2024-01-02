@@ -12,11 +12,16 @@ pub struct InvalidRequest {
 
 impl InvalidRequest {
     pub fn new(stream: TcpStream, reason: &str) -> InvalidRequest {
-        InvalidRequest { stream, reason: reason.to_string() }
+        InvalidRequest {
+            stream,
+            reason: reason.to_string(),
+        }
     }
 
     fn handler(&self) -> Result<String, ServerError> {
-        Err(ServerError::API{ message: self.reason.clone() })
+        Err(ServerError::API {
+            message: self.reason.clone(),
+        })
     }
 }
 

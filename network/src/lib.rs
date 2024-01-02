@@ -22,13 +22,21 @@ pub enum Type {
     Default,
     // main server requests
     Ping,
+    Connect,
+    Disconnect,
     FindLobby,
     CreateLobby,
     DeleteLobby,
+    GetLobbies,
     // lobby requests
     JoinLobby,
     LeaveLobby,
     SendMessage,
+    // client notifications
+    PlayerJoined,
+    PlayerLeft,
+    LobbyClosing,
+    BecameHost,
     // responses
     Success,
     Error,
@@ -62,7 +70,10 @@ where
     };
 
     if res_type == Type::Error {
-        return Err(anyhow!(format!("error: {:?}", String::from_utf8(res)?)));
+        return Err(anyhow!(format!(
+            "error: {:?}",
+            bincode::deserialize::<String>(&res)?
+        )));
     }
 
     Ok(bincode::deserialize(&res)?)

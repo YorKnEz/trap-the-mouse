@@ -108,6 +108,8 @@ impl Server {
     }
 
     pub fn start(&self) -> Result<()> {
+        println!("server is up");
+
         self.server.start(self)?;
 
         Ok(())

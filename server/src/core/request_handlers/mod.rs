@@ -13,9 +13,9 @@ use serde::Serialize;
 
 use network::Type;
 
+pub use exit::ExitRequest;
 pub use invalid::InvalidRequest;
 pub use ping::PingRequest;
-pub use exit::ExitRequest;
 
 pub use lobby::*;
 pub use server::*;
@@ -33,7 +33,9 @@ pub fn error_check<T: Serialize>(res: Result<T, ServerError>) -> Result<(Type, V
             println!("request error: {e:?}");
             match e {
                 ServerError::API { message } => (Type::Error, bincode::serialize(&message)?),
-                ServerError::APINotConnected => (Type::Error, bincode::serialize(&"you are not connected")?),
+                ServerError::APINotConnected => {
+                    (Type::Error, bincode::serialize(&"you are not connected")?)
+                }
                 _ => (Type::Error, bincode::serialize("internal error")?),
             }
         }
