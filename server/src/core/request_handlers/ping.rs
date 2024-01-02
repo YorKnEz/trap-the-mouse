@@ -1,9 +1,9 @@
 use std::net::TcpStream;
 
 use anyhow::{anyhow, Result};
-use network::{SendRecv, Type};
+use network::SendRecv;
 
-use super::{Request, error::ServerError};
+use super::{error::ServerError, error_check, Request};
 
 pub struct PingRequest {
     stream: TcpStream,
@@ -23,16 +23,7 @@ impl PingRequest {
 
 impl Request for PingRequest {
     fn execute(&mut self) -> Result<()> {
-        let (res_type, res) = match self.handler() {
-            Ok(res) => (Type::Success, bincode::serialize(&res)?),
-            Err(e) => {
-                println!("couldn't ping: {e:?}");
-                match e {
-                    ServerError::Internal(_) => (Type::Error, bincode::serialize("internal error")?),
-                    ServerError::API { message } => (Type::Error, bincode::serialize(&message)?)
-                }
-            }
-        };
+        let (res_type, res) = error_check(self.handler())?;
 
         if let Err(e) = self.stream.send(res_type, &res) {
             return Err(anyhow!(format!("couldn't send: {e:?}")));
