@@ -3,15 +3,25 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
 
-use super::request_handlers::{InvalidRequest, PingRequest};
+use super::request_handlers::{InvalidRequest, JoinLobbyRequest, PingRequest};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
-use network::{SendRecv, Type};
+use network::{request, SendRecv, Type};
+
+pub enum UserType {
+    Host,
+    Player,
+    Spectator,
+}
 
 pub type LobbyId = Arc<Mutex<u16>>;
+
+pub type UserInfo = (UserType, SocketAddr, SocketAddr);
+pub type UsersVec = Arc<Mutex<Vec<UserInfo>>>;
 
 pub struct Lobby {
     pub server: ServerCore,
     pub id: LobbyId,
+    pub users: UsersVec,
 }
 
 impl RequestHandler for Lobby {
@@ -24,8 +34,20 @@ impl RequestHandler for Lobby {
         };
 
         Ok(match req_type {
-            Type::Ping => Box::new(PingRequest::new(stream, bincode::deserialize(&buf)?)),
-            _ => Box::new(InvalidRequest::new(stream)),
+            Type::Ping => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(PingRequest::new(stream, buf)),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::JoinLobby => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(JoinLobbyRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            _ => Box::new(InvalidRequest::new(stream, "invalid request")),
         })
     }
 }
@@ -37,6 +59,7 @@ impl Lobby {
         Ok(Lobby {
             server,
             id: Arc::new(Mutex::new(id)),
+            users: Arc::new(Mutex::new(vec![])),
         })
     }
 
@@ -48,5 +71,15 @@ impl Lobby {
     pub fn get_addr(&self) -> Result<SocketAddr> {
         let addr = self.server.get_addr()?;
         Ok(addr)
+    }
+}
+
+impl Drop for Lobby {
+    fn drop(&mut self) {
+        let mut users = self.users.lock().unwrap();
+
+        while let Some((_, _, notify)) = users.pop() {
+            request(notify, Type::LobbyClosing, &()).unwrap_or(());
+        }
     }
 }
