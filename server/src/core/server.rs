@@ -29,23 +29,39 @@ impl RequestHandler for Server {
         };
 
         Ok(match req_type {
-            Type::Ping => Box::new(PingRequest::new(stream, bincode::deserialize(&buf)?)),
-            Type::CreateLobby => Box::new(CreateLobbyRequest::new(
-                stream,
-                Arc::clone(&self.lobby_id),
-                Arc::clone(&self.lobbies),
-            )),
-            Type::DeleteLobby => Box::new(DeleteLobbyRequest::new(
-                stream,
-                bincode::deserialize(&buf)?,
-                Arc::clone(&self.lobbies),
-            )),
-            Type::GetLobbies => Box::new(GetLobbiesRequest::new(
-                stream,
-                bincode::deserialize(&buf)?,
-                Arc::clone(&self.lobbies),
-            )),
-            _ => Box::new(InvalidRequest::new(stream)),
+            Type::Ping => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(PingRequest::new(stream, buf)),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::CreateLobby => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(CreateLobbyRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.lobby_id),
+                    Arc::clone(&self.lobbies),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::DeleteLobby => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(DeleteLobbyRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.lobbies),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::GetLobbies => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(GetLobbiesRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.lobbies),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            _ => Box::new(InvalidRequest::new(stream, "invalid request")),
         })
     }
 }
