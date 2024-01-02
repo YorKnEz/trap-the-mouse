@@ -6,7 +6,8 @@ use anyhow::{anyhow, Result};
 
 use super::lobby::LobbyId;
 use super::request_handlers::{
-    CreateLobbyRequest, DeleteLobbyRequest, GetLobbiesRequest, InvalidRequest, PingRequest,
+    ConnectRequest, CreateLobbyRequest, DeleteLobbyRequest, DisconnectRequest, GetLobbiesRequest,
+    InvalidRequest, PingRequest,
 };
 use super::{BoolMutex, RequestHandler, RequestQueueItem, ServerCore};
 use network::{SendRecv, Type};
@@ -31,6 +32,22 @@ impl RequestHandler for Server {
         Ok(match req_type {
             Type::Ping => match bincode::deserialize(&buf) {
                 Ok(buf) => Box::new(PingRequest::new(stream, buf)),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::Connect => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(ConnectRequest::new(
+                    stream,
+                    buf,
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::Disconnect => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(DisconnectRequest::new(
+                    stream,
+                    buf,
+                    self.server.db_pool.clone(),
+                )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
             },
             Type::CreateLobby => match bincode::deserialize(&buf) {
