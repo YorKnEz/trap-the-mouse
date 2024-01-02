@@ -20,8 +20,8 @@ use super::{error::ServerError, Request};
 
 pub struct CreateLobbyRequest {
     stream: TcpStream,
-    name: String,
-    id: LobbyId,
+    user_id: u32,
+    lobby_id: LobbyId,
     lobbies: LobbyVec,
     db_pool: Pool<SqliteConnectionManager>,
 }
@@ -29,15 +29,15 @@ pub struct CreateLobbyRequest {
 impl CreateLobbyRequest {
     pub fn new(
         stream: TcpStream,
-        name: String,
-        id: LobbyId,
+        user_id: u32,
+        lobby_id: LobbyId,
         lobbies: LobbyVec,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> CreateLobbyRequest {
         CreateLobbyRequest {
             stream,
-            name,
-            id,
+            user_id,
+            lobby_id,
             lobbies,
             db_pool,
         }
@@ -46,13 +46,19 @@ impl CreateLobbyRequest {
     fn handler(&self) -> Result<(u16, SocketAddr), ServerError> {
         let conn = self.db_pool.get()?;
 
-        let _ = match conn.get_user_by_key(&self.name, &self.stream.local_addr()?.to_string()) {
-            Ok(db_user) => db_user,
-            Err(_) => return Err(ServerError::APINotConnected),
+        let _ = match conn.is_connected(self.user_id) {
+            Ok(Some(db_user)) => db_user,
+            Ok(None) => return Err(ServerError::APINotConnected),
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                return Err(ServerError::API {
+                    message: "invalid id".to_string(),
+                })
+            }
+            Err(e) => return Err(ServerError::InternalRusqlite(e)),
         };
 
         let id = {
-            let mut id = self.id.lock().unwrap();
+            let mut id = self.lobby_id.lock().unwrap();
             let ret = *id;
             *id += 1;
             ret

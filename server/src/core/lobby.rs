@@ -2,11 +2,13 @@ use std::net::{SocketAddr, TcpStream};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
+use serde_derive::Serialize;
 
 use super::request_handlers::{InvalidRequest, JoinLobbyRequest, PingRequest};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
 use network::{request, SendRecv, Type};
 
+#[derive(PartialEq, Clone, Copy, Serialize)]
 pub enum UserType {
     Host,
     Player,
@@ -15,7 +17,12 @@ pub enum UserType {
 
 pub type LobbyId = Arc<Mutex<u16>>;
 
-pub type UserInfo = (UserType, SocketAddr, SocketAddr);
+pub struct UserInfo {
+    pub user_type: UserType,
+    pub name: String,
+    pub addr: SocketAddr,
+}
+
 pub type UsersVec = Arc<Mutex<Vec<UserInfo>>>;
 
 pub struct Lobby {
@@ -78,8 +85,8 @@ impl Drop for Lobby {
     fn drop(&mut self) {
         let mut users = self.users.lock().unwrap();
 
-        while let Some((_, _, notify)) = users.pop() {
-            request(notify, Type::LobbyClosing, &()).unwrap_or(());
+        while let Some(user) = users.pop() {
+            request(user.addr, Type::LobbyClosing, &()).unwrap_or(());
         }
     }
 }

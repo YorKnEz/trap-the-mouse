@@ -13,19 +13,19 @@ use super::{error::ServerError, Request};
 
 pub struct DisconnectRequest {
     stream: TcpStream,
-    name: String,
+    user_id: u32,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
 impl DisconnectRequest {
     pub fn new(
         stream: TcpStream,
-        name: String,
+        user_id: u32,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> DisconnectRequest {
         DisconnectRequest {
             stream,
-            name,
+            user_id,
             db_pool,
         }
     }
@@ -33,7 +33,18 @@ impl DisconnectRequest {
     fn handler(&self) -> Result<(), ServerError> {
         let conn = self.db_pool.get()?;
 
-        conn.remove_user(&self.name, &self.stream.local_addr()?.to_string())?;
+        let db_user = match conn.is_connected(self.user_id) {
+            Ok(Some(db_user)) => db_user,
+            Ok(None) => return Err(ServerError::APINotConnected),
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                return Err(ServerError::API {
+                    message: "invalid id".to_string(),
+                })
+            }
+            Err(e) => return Err(ServerError::InternalRusqlite(e)),
+        };
+
+        conn.toggle_connected(db_user.id)?;
 
         Ok(())
     }

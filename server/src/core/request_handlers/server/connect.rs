@@ -14,7 +14,7 @@ use super::{error::ServerError, Request};
 pub struct ConnectRequest {
     stream: TcpStream,
     name: String,
-    notify_addr: String,
+    addr: SocketAddr,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -27,36 +27,38 @@ impl ConnectRequest {
         ConnectRequest {
             stream,
             name: data.0,
-            notify_addr: data.1.to_string(),
+            addr: data.1,
             db_pool,
         }
     }
 
-    fn handler(&self) -> Result<(), ServerError> {
+    fn handler(&self) -> Result<u32, ServerError> {
         let conn = self.db_pool.get()?;
 
-        match conn.add_user(
-            &self.name,
-            &self.stream.local_addr()?.to_string(),
-            &self.notify_addr,
-        ) {
+        match conn.add_user(&self.name, &self.addr.to_string()) {
             Ok(_) => {}
-            // user is already connected, this can happen only if the user abruptly disconnected
-            Err(rusqlite::Error::SqliteFailure(e, m)) => {
-                if let Some(m) = m {
-                    if e.code == rusqlite::ErrorCode::ConstraintViolation && m.starts_with("UNIQUE")
-                    {
-                        return Ok(());
-                        // return Err(ServerError::API {
-                        //     message: "you are already connected".to_string(),
-                        // });
-                    }
+            Err(rusqlite::Error::SqliteFailure(e, Some(m))) => {
+                if e.code != rusqlite::ErrorCode::ConstraintViolation {
+                    return Err(ServerError::InternalRusqlite(
+                        rusqlite::Error::SqliteFailure(e, Some(m)),
+                    ));
                 }
+
+                // user is already added to db, just continue the handler
             }
             Err(e) => return Err(ServerError::InternalRusqlite(e)),
         }
 
-        Ok(())
+        let db_user = match conn.get_user_by_key(&self.name, &self.addr.to_string()) {
+            Ok(db_user) => db_user,
+            Err(e) => return Err(ServerError::InternalRusqlite(e)),
+        };
+
+        if db_user.connected == 0 {
+            conn.toggle_connected(db_user.id)?;
+        }
+
+        Ok(db_user.id)
     }
 }
 

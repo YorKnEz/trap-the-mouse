@@ -11,8 +11,8 @@ use super::{error::ServerError, Request};
 
 pub struct DeleteLobbyRequest {
     stream: TcpStream,
-    name: String,
-    id: u16,
+    user_id: u32,
+    lobby_id: u16,
     lobbies: LobbyVec,
     db_pool: Pool<SqliteConnectionManager>,
 }
@@ -20,14 +20,14 @@ pub struct DeleteLobbyRequest {
 impl DeleteLobbyRequest {
     pub fn new(
         stream: TcpStream,
-        data: (String, u16),
+        data: (u32, u16),
         lobbies: LobbyVec,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> DeleteLobbyRequest {
         DeleteLobbyRequest {
             stream,
-            name: data.0,
-            id: data.1,
+            user_id: data.0,
+            lobby_id: data.1,
             lobbies,
             db_pool,
         }
@@ -36,14 +36,23 @@ impl DeleteLobbyRequest {
     fn handler(&self) -> Result<(), ServerError> {
         let conn = self.db_pool.get()?;
 
-        let _ = match conn.get_user_by_key(&self.name, &self.stream.local_addr()?.to_string()) {
-            Ok(db_user) => db_user,
-            Err(_) => return Err(ServerError::APINotConnected),
+        let _ = match conn.is_connected(self.user_id) {
+            Ok(Some(db_user)) => db_user,
+            Ok(None) => return Err(ServerError::APINotConnected),
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                return Err(ServerError::API {
+                    message: "invalid id".to_string(),
+                })
+            }
+            Err(e) => return Err(ServerError::InternalRusqlite(e)),
         };
 
         let mut lobbies = self.lobbies.lock().unwrap();
 
-        let index = match lobbies.iter().position(|(id, _, _, _)| *id == self.id) {
+        let index = match lobbies
+            .iter()
+            .position(|(id, _, _, _)| *id == self.lobby_id)
+        {
             Some(index) => index,
             None => {
                 return Err(ServerError::API {

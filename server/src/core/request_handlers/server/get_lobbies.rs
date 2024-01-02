@@ -14,7 +14,7 @@ use super::Request;
 
 pub struct GetLobbiesRequest {
     stream: TcpStream,
-    name: String,
+    user_id: u32,
     start: u32,
     offset: u32,
     lobbies: LobbyVec,
@@ -24,13 +24,13 @@ pub struct GetLobbiesRequest {
 impl GetLobbiesRequest {
     pub fn new(
         stream: TcpStream,
-        data: (String, u32, u32),
+        data: (u32, u32, u32),
         lobbies: LobbyVec,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> GetLobbiesRequest {
         GetLobbiesRequest {
             stream,
-            name: data.0,
+            user_id: data.0,
             start: data.1,
             offset: data.2,
             lobbies,
@@ -41,9 +41,15 @@ impl GetLobbiesRequest {
     fn handler(&self) -> Result<Vec<(u16, SocketAddr)>, ServerError> {
         let conn = self.db_pool.get()?;
 
-        let _ = match conn.get_user_by_key(&self.name, &self.stream.local_addr()?.to_string()) {
-            Ok(db_user) => db_user,
-            Err(_) => return Err(ServerError::APINotConnected),
+        let _ = match conn.is_connected(self.user_id) {
+            Ok(Some(db_user)) => db_user,
+            Ok(None) => return Err(ServerError::APINotConnected),
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                return Err(ServerError::API {
+                    message: "invalid id".to_string(),
+                })
+            }
+            Err(e) => return Err(ServerError::InternalRusqlite(e)),
         };
 
         if self.offset > 10 {
@@ -52,7 +58,6 @@ impl GetLobbiesRequest {
             });
         }
 
-        
         if self.start > self.start.wrapping_add(self.offset) {
             return Err(ServerError::API {
                 message: "invalid range".to_string(),
