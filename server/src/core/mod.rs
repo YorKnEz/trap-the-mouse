@@ -1,3 +1,4 @@
+pub mod db;
 mod lobby;
 mod request_handlers;
 mod server;
@@ -12,6 +13,9 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 
 use anyhow::Result;
+
+use r2d2::Pool;
+use r2d2_sqlite::SqliteConnectionManager;
 
 use request_handlers::{ExitRequest, Request};
 
@@ -30,6 +34,7 @@ pub trait RequestHandler {
 
 pub struct ServerCore {
     pub running: BoolMutex,
+    pub db_pool: Pool<SqliteConnectionManager>,
     requests: RequestQueue,
     server: TcpListener,
     handles: HandleVec,
@@ -39,6 +44,11 @@ impl ServerCore {
     pub fn new(addr: &str) -> Result<ServerCore> {
         // bool used to indicate to all threads if server should stop
         let running = Arc::new(Mutex::new(true));
+
+        // db connection pool
+        let manager = SqliteConnectionManager::file("db.db");
+        let db_pool = Pool::new(manager)?;
+
         // requests queue
         let requests = Arc::new((Mutex::new(vec![]), Condvar::new()));
 
@@ -88,6 +98,7 @@ impl ServerCore {
         // return newly created server
         Ok(ServerCore {
             running,
+            db_pool,
             requests,
             server,
             handles: RefCell::new(handles),
