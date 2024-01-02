@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 use serde_derive::Serialize;
 
-use super::request_handlers::{InvalidRequest, JoinLobbyRequest, PingRequest};
+use super::request_handlers::{InvalidRequest, JoinLobbyRequest, LeaveLobbyRequest, PingRequest};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
 use network::{request, SendRecv, Type};
 
@@ -47,6 +47,15 @@ impl RequestHandler for Lobby {
             },
             Type::JoinLobby => match bincode::deserialize(&buf) {
                 Ok(buf) => Box::new(JoinLobbyRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::LeaveLobby => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(LeaveLobbyRequest::new(
                     stream,
                     buf,
                     Arc::clone(&self.users),
