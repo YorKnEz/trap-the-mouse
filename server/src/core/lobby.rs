@@ -4,7 +4,8 @@ use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 
 use super::request_handlers::{
-    GetLobbyStateRequest, InvalidRequest, JoinLobbyRequest, LeaveLobbyRequest, PingRequest, CloseLobbyRequest,
+    BecomeRoleRequest, CloseLobbyRequest, GetLobbyStateRequest, InvalidRequest, JoinLobbyRequest,
+    LeaveLobbyRequest, MakeHostRequest, PingRequest,
 };
 use super::types::{LobbyId, UsersVec};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
@@ -64,6 +65,24 @@ impl RequestHandler for Lobby {
                     buf,
                     Arc::clone(&self.users),
                     Arc::clone(&self.server.running),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::MakeHost => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(MakeHostRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::BecomeRole => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(BecomeRoleRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
                     self.server.db_pool.clone(),
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),

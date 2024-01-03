@@ -7,6 +7,8 @@ mod get_lobbies;
 mod join_lobby;
 mod leave_lobby;
 mod ping;
+mod become_role;
+mod make_host;
 
 pub use clear::ClearCmd;
 pub use connect::ConnectCmd;
@@ -17,3 +19,5 @@ pub use get_lobbies::GetLobbiesCmd;
 pub use join_lobby::JoinLobbyCmd;
 pub use leave_lobby::LeaveLobbyCmd;
 pub use ping::PingCmd;
+pub use become_role::BecomeRoleCmd;
+pub use make_host::MakeHostCmd;

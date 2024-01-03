@@ -28,16 +28,18 @@ pub enum Type {
     CreateLobby,
     GetLobbies,
     // lobby requests
-    JoinLobby,
     GetLobbyState,
+    JoinLobby,
     LeaveLobby,
     CloseLobby,
+    MakeHost,
+    BecomeRole,
     SendMessage,
     // client notifications
+    LobbyClosing,
     PlayerJoined,
     PlayerLeft,
-    LobbyClosing,
-    BecameHost,
+    BecameRole,
     // responses
     Success,
     Error,

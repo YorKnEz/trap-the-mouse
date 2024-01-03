@@ -75,7 +75,7 @@ impl LeaveLobbyRequest {
                     host_id = user.id;
                 }
 
-                request(user.addr, Type::BecameHost, &host_id)?;
+                request(user.addr, Type::BecameRole, &(host_id, UserType::Host))?;
             }
 
             request(user.addr, Type::PlayerLeft, &db_user.id)?;

@@ -9,12 +9,9 @@ use anyhow::Result;
 
 use network::{SendRecv, Type};
 
-use crate::{
-    types::{BoolMutex, EventQueue, EventQueueItem},
-    ActiveLobby, LobbyVec,
-};
+use crate::types::{ActiveLobby, BoolMutex, EventQueue, EventQueueItem, LobbyVec};
 
-use super::{LobbyClosingEvent, PlayerJoinedEvent, PlayerLeftEvent, BecameHostEvent};
+use super::{BecameRoleEvent, LobbyClosingEvent, PlayerJoinedEvent, PlayerLeftEvent};
 
 pub struct EventLoop {
     running: BoolMutex,
@@ -121,8 +118,8 @@ pub fn event_loop_thread(
                         ))),
                         Err(_) => None,
                     },
-                    Type::BecameHost => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(BecameHostEvent::new(
+                    Type::BecameRole => match bincode::deserialize(&buf) {
+                        Ok(buf) => Some(Box::new(BecameRoleEvent::new(
                             buf,
                             Arc::clone(&active_lobby),
                         ))),

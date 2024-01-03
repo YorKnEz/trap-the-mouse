@@ -5,7 +5,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use serde_derive::Serialize;
+use serde_derive::{Serialize, Deserialize};
 
 use super::request_handlers::Request;
 
@@ -13,7 +13,7 @@ pub type BoolMutex = Arc<Mutex<bool>>;
 
 pub type HandleVec = RefCell<Vec<JoinHandle<()>>>;
 
-#[derive(PartialEq, Clone, Copy, Serialize)]
+#[derive(PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum UserType {
     Host,
     Player,
