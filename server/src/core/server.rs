@@ -1,18 +1,15 @@
-use std::net::{SocketAddr, TcpStream};
+use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
 
 use anyhow::{anyhow, Result};
 
-use super::lobby::LobbyId;
 use super::request_handlers::{
     ConnectRequest, CreateLobbyRequest, DeleteLobbyRequest, DisconnectRequest, GetLobbiesRequest,
     InvalidRequest, PingRequest,
 };
-use super::{BoolMutex, RequestHandler, RequestQueueItem, ServerCore};
+use super::types::{LobbyId, LobbyVec};
+use super::{RequestHandler, RequestQueueItem, ServerCore};
 use network::{SendRecv, Type};
-
-pub type LobbyVec = Arc<Mutex<Vec<(u16, SocketAddr, BoolMutex, JoinHandle<()>)>>>;
 
 pub struct Server {
     server: ServerCore,

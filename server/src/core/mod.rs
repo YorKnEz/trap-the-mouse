@@ -2,6 +2,7 @@ pub mod db;
 mod lobby;
 mod request_handlers;
 mod server;
+mod types;
 
 pub use server::*;
 
@@ -10,21 +11,16 @@ use std::io;
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::ops::Drop;
 use std::sync::{Arc, Condvar, Mutex};
-use std::thread::{self, JoinHandle};
+use std::thread;
 
 use anyhow::Result;
 
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
-use request_handlers::{ExitRequest, Request};
+use request_handlers::ExitRequest;
 
-pub type BoolMutex = Arc<Mutex<bool>>;
-
-type RequestQueue = Arc<(Mutex<Vec<RequestQueueItem>>, Condvar)>;
-pub type RequestQueueItem = Box<dyn Request + Send>;
-
-type HandleVec = RefCell<Vec<JoinHandle<()>>>;
+use types::{RequestQueueItem, BoolMutex, RequestQueue, HandleVec};
 
 const THREAD_POOL_SIZE: u32 = 2;
 

@@ -7,8 +7,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    lobby::{UserType, UsersVec},
-    request_handlers::error_check,
+    request_handlers::error_check, types::{UsersVec, UserType},
 };
 
 use super::{error::ServerError, Request};

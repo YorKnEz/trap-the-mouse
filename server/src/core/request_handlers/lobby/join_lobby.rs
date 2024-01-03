@@ -7,8 +7,8 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    lobby::{UserInfo, UserType, UsersVec},
     request_handlers::error_check,
+    types::{UserInfo, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -35,7 +35,7 @@ impl JoinLobbyRequest {
         }
     }
 
-    fn handler(&self) -> Result<Vec<(UserType, String)>, ServerError> {
+    fn handler(&self) -> Result<Vec<UserInfoShort>, ServerError> {
         let conn = self.db_pool.get()?;
 
         let db_user = match conn.is_connected(self.user_id) {
@@ -65,29 +65,22 @@ impl JoinLobbyRequest {
             None => {}
         };
 
-        let user: UserInfo = match users.len() {
-            0 => UserInfo {
-                user_type: UserType::Host,
-                name: db_user.name.clone(),
-                addr,
+        let user: UserInfo = UserInfo {
+            id: db_user.id,
+            user_type: match users.len() {
+                0 => UserType::Host,
+                1 => UserType::Player,
+                _ => UserType::Spectator,
             },
-            1 => UserInfo {
-                user_type: UserType::Player,
-                name: db_user.name.clone(),
-                addr,
-            },
-            _ => UserInfo {
-                user_type: UserType::Spectator,
-                name: db_user.name.clone(),
-                addr,
-            },
+            name: db_user.name.clone(),
+            addr,
         };
 
         for user in users.iter() {
             request(
                 user.addr,
                 Type::PlayerJoined,
-                &(db_user.id, db_user.name.clone()),
+                &UserInfoShort::from(user),
             )?;
         }
 
@@ -95,7 +88,7 @@ impl JoinLobbyRequest {
 
         Ok(users
             .iter()
-            .map(|i| (i.user_type, i.name.clone()))
+            .map(|i| UserInfoShort::from(i))
             .collect())
     }
 }

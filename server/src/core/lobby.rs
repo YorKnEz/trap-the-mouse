@@ -2,28 +2,13 @@ use std::net::{SocketAddr, TcpStream};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
-use serde_derive::Serialize;
 
-use super::request_handlers::{InvalidRequest, JoinLobbyRequest, LeaveLobbyRequest, PingRequest};
+use super::request_handlers::{
+    GetLobbyStateRequest, InvalidRequest, JoinLobbyRequest, LeaveLobbyRequest, PingRequest,
+};
+use super::types::{LobbyId, UsersVec};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
 use network::{request, SendRecv, Type};
-
-#[derive(PartialEq, Clone, Copy, Serialize)]
-pub enum UserType {
-    Host,
-    Player,
-    Spectator,
-}
-
-pub type LobbyId = Arc<Mutex<u16>>;
-
-pub struct UserInfo {
-    pub user_type: UserType,
-    pub name: String,
-    pub addr: SocketAddr,
-}
-
-pub type UsersVec = Arc<Mutex<Vec<UserInfo>>>;
 
 pub struct Lobby {
     pub server: ServerCore,
@@ -43,6 +28,15 @@ impl RequestHandler for Lobby {
         Ok(match req_type {
             Type::Ping => match bincode::deserialize(&buf) {
                 Ok(buf) => Box::new(PingRequest::new(stream, buf)),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::GetLobbyState => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(GetLobbyStateRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.id),
+                    Arc::clone(&self.users),
+                )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
             },
             Type::JoinLobby => match bincode::deserialize(&buf) {

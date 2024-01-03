@@ -1,4 +1,4 @@
-use std::net::{SocketAddr, TcpStream};
+use std::net::TcpStream;
 
 use anyhow::{anyhow, Result};
 use network::SendRecv;
@@ -7,7 +7,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::db::UserOps;
 use crate::core::request_handlers::error_check;
-use crate::core::LobbyVec;
+use crate::core::types::{LobbyAddr, LobbyVec};
 
 use super::error::ServerError;
 use super::Request;
@@ -38,7 +38,7 @@ impl GetLobbiesRequest {
         }
     }
 
-    fn handler(&self) -> Result<Vec<(u16, SocketAddr)>, ServerError> {
+    fn handler(&self) -> Result<Vec<LobbyAddr>, ServerError> {
         let conn = self.db_pool.get()?;
 
         let _ = match conn.is_connected(self.user_id) {
@@ -71,7 +71,10 @@ impl GetLobbiesRequest {
 
         Ok((&lobbies[start..end])
             .iter()
-            .map(|item| (item.0, item.1))
+            .map(|item| LobbyAddr {
+                id: item.0,
+                addr: item.1,
+            })
             .collect())
     }
 }

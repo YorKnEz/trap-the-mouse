@@ -5,7 +5,7 @@ use network::SendRecv;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
-use crate::core::{db::UserOps, request_handlers::error_check, LobbyVec};
+use crate::core::{db::UserOps, request_handlers::error_check, types::LobbyVec};
 
 use super::{error::ServerError, Request};
 

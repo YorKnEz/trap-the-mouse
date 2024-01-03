@@ -1,8 +1,4 @@
-use std::{
-    net::{SocketAddr, TcpStream},
-    sync::Arc,
-    thread,
-};
+use std::{net::TcpStream, sync::Arc, thread};
 
 use anyhow::{anyhow, Result};
 use network::SendRecv;
@@ -11,9 +7,9 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    lobby::{Lobby, LobbyId},
+    lobby::Lobby,
     request_handlers::error_check,
-    LobbyVec,
+    types::{LobbyAddr, LobbyId, LobbyVec},
 };
 
 use super::{error::ServerError, Request};
@@ -43,7 +39,7 @@ impl CreateLobbyRequest {
         }
     }
 
-    fn handler(&self) -> Result<(u16, SocketAddr), ServerError> {
+    fn handler(&self) -> Result<LobbyAddr, ServerError> {
         let conn = self.db_pool.get()?;
 
         let _ = match conn.is_connected(self.user_id) {
@@ -78,7 +74,7 @@ impl CreateLobbyRequest {
             lobbies.push((id, addr, running, handle));
         }
 
-        Ok((id, addr))
+        Ok(LobbyAddr { id, addr })
     }
 }
 
