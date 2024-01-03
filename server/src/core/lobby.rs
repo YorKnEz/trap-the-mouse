@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 
 use super::request_handlers::{
-    GetLobbyStateRequest, InvalidRequest, JoinLobbyRequest, LeaveLobbyRequest, PingRequest,
+    GetLobbyStateRequest, InvalidRequest, JoinLobbyRequest, LeaveLobbyRequest, PingRequest, CloseLobbyRequest,
 };
 use super::types::{LobbyId, UsersVec};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
@@ -53,6 +53,17 @@ impl RequestHandler for Lobby {
                     stream,
                     buf,
                     Arc::clone(&self.users),
+                    Arc::clone(&self.server.running),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::CloseLobby => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(CloseLobbyRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
+                    Arc::clone(&self.server.running),
                     self.server.db_pool.clone(),
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),

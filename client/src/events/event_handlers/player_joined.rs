@@ -1,4 +1,4 @@
-use crate::types::{ActiveLobby, Player, UserType};
+use crate::types::{ActiveLobby, Player};
 
 use super::{Event, EventError};
 
@@ -8,13 +8,9 @@ pub struct PlayerJoinedEvent {
 }
 
 impl PlayerJoinedEvent {
-    pub fn new(data: (UserType, u32, String), active_lobby: ActiveLobby) -> PlayerJoinedEvent {
+    pub fn new(player: Player, active_lobby: ActiveLobby) -> PlayerJoinedEvent {
         PlayerJoinedEvent {
-            player: Player {
-                user_type: data.0,
-                id: data.1,
-                name: data.2,
-            },
+            player,
             active_lobby,
         }
     }
@@ -27,7 +23,8 @@ impl Event for PlayerJoinedEvent {
 
             if active_lobby.1 {
                 active_lobby.0.players.push(self.player.clone());
-                println!("player {:?} joined", self.player);
+                active_lobby.0.players.dedup_by(|a, b| a.id == b.id);
+                println!("player {} joined", self.player);
             }
         }
 

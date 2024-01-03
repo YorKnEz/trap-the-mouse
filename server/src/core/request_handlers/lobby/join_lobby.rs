@@ -65,7 +65,7 @@ impl JoinLobbyRequest {
             None => {}
         };
 
-        let user: UserInfo = UserInfo {
+        let new_user: UserInfo = UserInfo {
             id: db_user.id,
             user_type: match users.len() {
                 0 => UserType::Host,
@@ -80,16 +80,13 @@ impl JoinLobbyRequest {
             request(
                 user.addr,
                 Type::PlayerJoined,
-                &UserInfoShort::from(user),
+                &UserInfoShort::from(&new_user),
             )?;
         }
 
-        users.push(user);
+        users.push(new_user);
 
-        Ok(users
-            .iter()
-            .map(|i| UserInfoShort::from(i))
-            .collect())
+        Ok(users.iter().map(|i| UserInfoShort::from(i)).collect())
     }
 }
 

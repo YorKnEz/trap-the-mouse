@@ -2,24 +2,26 @@ use network::{request, Type};
 
 use crate::{
     commands::{Command, CommandError},
-    ActiveLobby, UserId,
+    types::{ActiveLobby, LobbyVec, UserId},
 };
 
-pub struct LeaveLobbyCmd {
+pub struct CloseLobbyCmd {
     user_id: UserId,
     active_lobby: ActiveLobby,
+    lobbies: LobbyVec,
 }
 
-impl LeaveLobbyCmd {
-    pub fn new(user_id: UserId, active_lobby: ActiveLobby) -> LeaveLobbyCmd {
-        LeaveLobbyCmd {
+impl CloseLobbyCmd {
+    pub fn new(user_id: UserId, lobby: ActiveLobby, lobbies: LobbyVec) -> CloseLobbyCmd {
+        CloseLobbyCmd {
             user_id,
-            active_lobby,
+            active_lobby: lobby,
+            lobbies,
         }
     }
 }
 
-impl Command for LeaveLobbyCmd {
+impl Command for CloseLobbyCmd {
     fn execute(&mut self) -> Result<(), CommandError> {
         {
             let mut active_lobby = self.active_lobby.lock().unwrap();
@@ -32,14 +34,20 @@ impl Command for LeaveLobbyCmd {
 
             request(
                 active_lobby.0.addr,
-                Type::LeaveLobby,
+                Type::CloseLobby,
                 &*self.user_id.borrow(),
             )?;
 
             active_lobby.1 = false;
+
+            let mut lobbies = self.lobbies.lock().unwrap();
+
+            if let Some(index) = lobbies.iter().position(|i| i.id == active_lobby.0.id) {
+                lobbies.remove(index);
+            }
         }
 
-        println!("left lobby");
+        println!("closed lobby");
 
         Ok(())
     }

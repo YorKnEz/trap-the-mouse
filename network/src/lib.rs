@@ -26,12 +26,12 @@ pub enum Type {
     Disconnect,
     FindLobby,
     CreateLobby,
-    DeleteLobby,
     GetLobbies,
     // lobby requests
     JoinLobby,
     GetLobbyState,
     LeaveLobby,
+    CloseLobby,
     SendMessage,
     // client notifications
     PlayerJoined,

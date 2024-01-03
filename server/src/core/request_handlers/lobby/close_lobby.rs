@@ -5,30 +5,35 @@ use network::SendRecv;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
-use crate::core::{db::UserOps, request_handlers::error_check, types::LobbyVec};
+use crate::core::{
+    db::UserOps,
+    request_handlers::error_check,
+    types::{BoolMutex, UserType, UsersVec},
+};
 
 use super::{error::ServerError, Request};
 
-pub struct DeleteLobbyRequest {
+pub struct CloseLobbyRequest {
     stream: TcpStream,
     user_id: u32,
-    lobby_id: u16,
-    lobbies: LobbyVec,
+    users: UsersVec,
+    running: BoolMutex,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
-impl DeleteLobbyRequest {
+impl CloseLobbyRequest {
     pub fn new(
         stream: TcpStream,
-        data: (u32, u16),
-        lobbies: LobbyVec,
+        user_id: u32,
+        users: UsersVec,
+        running: BoolMutex,
         db_pool: Pool<SqliteConnectionManager>,
-    ) -> DeleteLobbyRequest {
-        DeleteLobbyRequest {
+    ) -> CloseLobbyRequest {
+        CloseLobbyRequest {
             stream,
-            user_id: data.0,
-            lobby_id: data.1,
-            lobbies,
+            user_id,
+            users,
+            running,
             db_pool,
         }
     }
@@ -47,37 +52,35 @@ impl DeleteLobbyRequest {
             Err(e) => return Err(ServerError::InternalRusqlite(e)),
         };
 
-        let mut lobbies = self.lobbies.lock().unwrap();
-
-        let index = match lobbies
+        match self
+            .users
+            .lock()
+            .unwrap()
             .iter()
-            .position(|(id, _, _, _)| *id == self.lobby_id)
+            .find(|u| u.id == self.user_id)
         {
-            Some(index) => index,
+            Some(user) => {
+                if user.user_type != UserType::Host {
+                    return Err(ServerError::API {
+                        message: "you are not the host".to_string(),
+                    });
+                }
+
+                let mut running = self.running.lock().unwrap();
+                *running = false;
+            }
             None => {
                 return Err(ServerError::API {
-                    message: "lobby not found".to_string(),
+                    message: "you are not connected to this lobby".to_string(),
                 })
             }
-        };
-
-        let (id, _, running, handle) = lobbies.remove(index);
-
-        {
-            let mut running = running.lock().unwrap();
-            *running = false;
-        }
-
-        match handle.join() {
-            Ok(_) => println!("lobby {id} shut down"),
-            Err(e) => println!("lobby thread panicked: {e:?}"),
         }
 
         Ok(())
     }
 }
 
-impl Request for DeleteLobbyRequest {
+impl Request for CloseLobbyRequest {
     fn execute(&mut self) -> Result<()> {
         let (res_type, res) = error_check(self.handler())?;
 

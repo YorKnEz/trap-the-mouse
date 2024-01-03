@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    fmt::Display,
     net::SocketAddr,
     rc::Rc,
     sync::{Arc, Mutex},
@@ -33,11 +34,34 @@ pub struct Player {
     pub name: String,
 }
 
+impl Display for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "(id: {}, user_type: {:?}, name: {})",
+            self.id, self.user_type, self.name
+        ))
+    }
+}
+
 #[derive(Debug)]
 pub struct Lobby {
     pub id: u16,
     pub addr: SocketAddr,
     pub players: Vec<Player>,
+}
+
+impl Display for Lobby {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut display = String::new();
+
+        display += &format!("id: {}\naddr: {:?}\nplayers:\n", self.id, self.addr);
+
+        for player in self.players.iter() {
+            display += &format!("  {}\n", player);
+        }
+
+        f.write_str(&display)
+    }
 }
 
 #[derive(Debug)]

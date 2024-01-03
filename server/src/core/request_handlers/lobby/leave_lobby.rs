@@ -7,7 +7,8 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    request_handlers::error_check, types::{UsersVec, UserType},
+    request_handlers::error_check,
+    types::{BoolMutex, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -16,6 +17,7 @@ pub struct LeaveLobbyRequest {
     stream: TcpStream,
     user_id: u32,
     users: UsersVec,
+    running: BoolMutex,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -24,17 +26,19 @@ impl LeaveLobbyRequest {
         stream: TcpStream,
         user_id: u32,
         users: UsersVec,
+        running: BoolMutex,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> LeaveLobbyRequest {
         LeaveLobbyRequest {
             stream,
             user_id,
             users,
+            running,
             db_pool,
         }
     }
 
-    fn handler(&self) -> Result<(), ServerError> {
+    fn handler(&self) -> Result<bool, ServerError> {
         let conn = self.db_pool.get()?;
 
         let db_user = match conn.is_connected(self.user_id) {
@@ -65,23 +69,30 @@ impl LeaveLobbyRequest {
         };
 
         let user = users.remove(index);
-        let mut find_host = if user.user_type == UserType::Host {
-            true
-        } else {
-            false
-        };
+
+        let find_host = user.user_type == UserType::Host;
+        let mut host_id = 0;
 
         for user in users.iter_mut() {
             if find_host {
-                user.user_type = UserType::Host;
-                request(user.addr, Type::BecameHost, &())?;
-                find_host = false;
+                if host_id == 0 {
+                    user.user_type = UserType::Host;
+                    host_id = user.id;
+                }
+
+                request(user.addr, Type::BecameHost, &host_id)?;
             }
 
             request(user.addr, Type::PlayerLeft, &db_user.id)?;
         }
 
-        Ok(())
+        // close lobby if no new host has been found (i.e. lobby is empty)
+        if find_host && host_id == 0 {
+            let mut running = self.running.lock().unwrap();
+            *running = false;
+        }
+
+        Ok(find_host && host_id == 0)
     }
 }
 

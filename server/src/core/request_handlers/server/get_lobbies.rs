@@ -64,7 +64,25 @@ impl GetLobbiesRequest {
             });
         }
 
-        let lobbies = { self.lobbies.lock().unwrap() };
+        let mut lobbies = self.lobbies.lock().unwrap();
+
+        // remove lobbies that might have been closed
+        let mut i = lobbies.len() as i32 - 1;
+
+        while i >= 0 {
+            let running = { *lobbies[i as usize].2.lock().unwrap() };
+
+            if !running {
+                let lobby = lobbies.remove(i as usize);
+
+                match lobby.3.join() {
+                    Ok(_) => println!("lobby {} shut down", lobby.0),
+                    Err(e) => println!("lobby thread panicked: {e:?}"),
+                }
+            }
+
+            i -= 1;
+        }
 
         let start = (self.start as usize).min(lobbies.len());
         let end = (start + self.offset as usize).min(lobbies.len());

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 
 use super::request_handlers::{
-    ConnectRequest, CreateLobbyRequest, DeleteLobbyRequest, DisconnectRequest, GetLobbiesRequest,
+    ConnectRequest, CreateLobbyRequest, DisconnectRequest, GetLobbiesRequest,
     InvalidRequest, PingRequest,
 };
 use super::types::{LobbyId, LobbyVec};
@@ -52,15 +52,6 @@ impl RequestHandler for Server {
                     stream,
                     buf,
                     Arc::clone(&self.lobby_id),
-                    Arc::clone(&self.lobbies),
-                    self.server.db_pool.clone(),
-                )),
-                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
-            },
-            Type::DeleteLobby => match bincode::deserialize(&buf) {
-                Ok(buf) => Box::new(DeleteLobbyRequest::new(
-                    stream,
-                    buf,
                     Arc::clone(&self.lobbies),
                     self.server.db_pool.clone(),
                 )),

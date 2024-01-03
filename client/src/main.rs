@@ -12,8 +12,8 @@ use std::{
 use events::EventLoop;
 
 use commands::{
-    ClearCmd, ConnectCmd, CreateLobbyCmd, DeleteLobbyCmd, DisconnectCmd, GetLobbiesCmd,
-    JoinLobbyCmd, LeaveLobbyCmd, PingCmd,
+    ClearCmd, CloseLobbyCmd, CommandError, ConnectCmd, CreateLobbyCmd, DisconnectCmd,
+    GetLobbiesCmd, JoinLobbyCmd, LeaveLobbyCmd, PingCmd,
 };
 
 use types::{ActiveLobby, CmdQueue, Lobby, LobbyVec, UserId};
@@ -72,17 +72,10 @@ fn main() {
                 Rc::clone(&user_id),
                 Arc::clone(&lobbies),
             )));
-        } else if buf.starts_with("delete lobby") {
-            let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
-
-            let lobby_id = {
-                let lobbies = lobbies.lock().unwrap();
-                lobbies[index].id
-            };
-
-            commands.borrow_mut().push(Box::new(DeleteLobbyCmd::new(
+        } else if buf.starts_with("close lobby") {
+            commands.borrow_mut().push(Box::new(CloseLobbyCmd::new(
                 Rc::clone(&user_id),
-                lobby_id,
+                Arc::clone(&active_lobby),
                 Arc::clone(&lobbies),
             )));
         } else if buf == "list lobbies" {
@@ -114,24 +107,16 @@ fn main() {
                 lobby,
                 Arc::clone(&active_lobby),
             )));
-        } else if buf.starts_with("leave lobby") {
-            let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
-
-            let lobby_addr = {
-                let lobbies = lobbies.lock().unwrap();
-                lobbies[index].addr
-            };
-
+        } else if buf == "leave lobby" {
             commands.borrow_mut().push(Box::new(LeaveLobbyCmd::new(
                 Rc::clone(&user_id),
-                lobby_addr,
                 Arc::clone(&active_lobby),
             )));
         } else if buf == "active lobby" {
             let active_lobby = active_lobby.lock().unwrap();
 
             if active_lobby.1 {
-                println!("{:?}", active_lobby.0);
+                println!("{}", active_lobby.0);
             } else {
                 println!("no lobby joined");
             }
@@ -148,7 +133,9 @@ fn main() {
         if let Some(mut cmd) = commands.borrow_mut().pop() {
             match cmd.execute() {
                 Ok(_) => {}
-                Err(e) => println!("cmd error: {e:?}"),
+                Err(CommandError::InternalAnyhow(e)) => println!("cmd error: {e}"),
+                Err(CommandError::CommandError { message }) => println!("cmd error: {message}"),
+                Err(e) => println!("cmd error: {}", e),
             }
         }
     }
