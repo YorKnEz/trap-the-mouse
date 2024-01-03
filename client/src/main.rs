@@ -1,18 +1,43 @@
+mod commands;
 mod events;
+mod types;
 
-use std::net::SocketAddr;
+use std::{
+    cell::RefCell,
+    net::{Ipv4Addr, SocketAddr},
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
-use network::{request, Type};
+use events::EventLoop;
 
-use crate::events::EventLoop;
+use commands::{
+    ClearCmd, ConnectCmd, CreateLobbyCmd, DeleteLobbyCmd, DisconnectCmd, GetLobbiesCmd,
+    JoinLobbyCmd, LeaveLobbyCmd, PingCmd,
+};
 
-const SERVER_ADDR: &str = "127.0.0.1:20000";
+use types::{ActiveLobby, CmdQueue, Lobby, LobbyVec, UserId};
+
+const SERVER_ADDR: SocketAddr =
+    SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20000);
 
 fn main() {
-    let event_loop = EventLoop::new().unwrap();
     let mut buf = String::new();
-    let mut user_id: u32 = 0;
-    let mut lobbies: Vec<(u16, SocketAddr)> = Vec::new();
+    let user_id: UserId = Rc::new(RefCell::new(0));
+    let lobbies: LobbyVec = Arc::new(Mutex::new(vec![]));
+
+    let active_lobby: ActiveLobby = Arc::new(Mutex::new((
+        Lobby {
+            id: 0,
+            addr: SERVER_ADDR,
+            players: vec![],
+        },
+        false,
+    )));
+
+    let event_loop = EventLoop::new(Arc::clone(&lobbies), Arc::clone(&active_lobby)).unwrap();
+
+    let commands: CmdQueue = Rc::new(RefCell::new(vec![]));
 
     loop {
         buf.clear();
@@ -20,75 +45,49 @@ fn main() {
         buf = buf.trim().to_string();
 
         if buf == "ping server" {
-            let res: String = match request(SERVER_ADDR, Type::Ping, &"01234567") {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("couldn't request: {e:?}");
-                    continue;
-                }
-            };
-
-            println!("received: {res}");
+            commands
+                .borrow_mut()
+                .push(Box::new(PingCmd::new("01234567".to_string(), SERVER_ADDR)));
         } else if buf == "connect" {
-            user_id = match request(SERVER_ADDR, Type::Connect, &("yorknez", event_loop.addr)) {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("couldn't request: {e:?}");
-                    continue;
-                }
-            };
-
-            println!("received: {user_id}");
+            commands.borrow_mut().push(Box::new(ConnectCmd::new(
+                "yorknez".to_string(),
+                event_loop.addr,
+                Rc::clone(&user_id),
+            )));
         } else if buf == "disconnect" {
-            match request(SERVER_ADDR, Type::Disconnect, &user_id) {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("couldn't request: {e:?}");
-                    continue;
-                }
-            };
-
-            println!("disconnected");
+            commands
+                .borrow_mut()
+                .push(Box::new(DisconnectCmd::new(Rc::clone(&user_id))));
         } else if buf.starts_with("ping lobby") {
             let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
 
-            let res: String = match request(lobbies[index].1, Type::Ping, &"01234567") {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("couldn't request: {e:?}");
-                    continue;
-                }
-            };
+            let lobbies = lobbies.lock().unwrap();
 
-            println!("received: {res}");
+            commands.borrow_mut().push(Box::new(PingCmd::new(
+                "01234567".to_string(),
+                lobbies[index].addr,
+            )));
         } else if buf == "create lobby" {
-            let (id, addr): (u16, SocketAddr) =
-                match request(SERVER_ADDR, Type::CreateLobby, &user_id) {
-                    Ok(res) => res,
-                    Err(e) => {
-                        println!("couldn't request: {e:?}");
-                        continue;
-                    }
-                };
-
-            println!("received: {id:?} {addr:?}");
-
-            lobbies.push((id, addr));
+            commands.borrow_mut().push(Box::new(CreateLobbyCmd::new(
+                Rc::clone(&user_id),
+                Arc::clone(&lobbies),
+            )));
         } else if buf.starts_with("delete lobby") {
             let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
 
-            match request(SERVER_ADDR, Type::DeleteLobby, &(user_id, lobbies[index].0)) {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("couldn't request: {e:?}");
-                    continue;
-                }
+            let lobby_id = {
+                let lobbies = lobbies.lock().unwrap();
+                lobbies[index].id
             };
 
-            lobbies.remove(index);
-
-            println!("deleted lobby")
+            commands.borrow_mut().push(Box::new(DeleteLobbyCmd::new(
+                Rc::clone(&user_id),
+                lobby_id,
+                Arc::clone(&lobbies),
+            )));
         } else if buf == "list lobbies" {
+            let lobbies = lobbies.lock().unwrap();
+
             for (i, lobby) in lobbies.iter().enumerate() {
                 println!("{i:2}. {lobby:?}");
             }
@@ -96,51 +95,61 @@ fn main() {
             let start = buf.split(" ").nth(2).unwrap().parse::<u32>().unwrap();
             let offset = buf.split(" ").nth(3).unwrap().parse::<u32>().unwrap();
 
-            let mut new_lobbies: Vec<(u16, SocketAddr)> =
-                match request(SERVER_ADDR, Type::GetLobbies, &(user_id, start, offset)) {
-                    Ok(res) => res,
-                    Err(e) => {
-                        println!("couldn't request: {e:?}");
-                        continue;
-                    }
-                };
-
-            println!("received: {new_lobbies:?}");
-
-            lobbies.append(&mut new_lobbies);
-            lobbies.sort_by_key(|a| a.0);
-            lobbies.dedup_by(|a, b| a.0 == b.0);
+            commands.borrow_mut().push(Box::new(GetLobbiesCmd::new(
+                Rc::clone(&user_id),
+                start,
+                offset,
+                Arc::clone(&lobbies),
+            )));
         } else if buf.starts_with("join lobby") {
             let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
 
-            match request(lobbies[index].1, Type::JoinLobby, &user_id) {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("couldn't request: {e:?}");
-                    continue;
-                }
+            let lobby = {
+                let lobbies = lobbies.lock().unwrap();
+                lobbies[index]
             };
-            println!("joined lobby")
+
+            commands.borrow_mut().push(Box::new(JoinLobbyCmd::new(
+                Rc::clone(&user_id),
+                lobby,
+                Arc::clone(&active_lobby),
+            )));
         } else if buf.starts_with("leave lobby") {
             let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
 
-            match request(lobbies[index].1, Type::LeaveLobby, &user_id) {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("couldn't request: {e:?}");
-                    continue;
-                }
+            let lobby_addr = {
+                let lobbies = lobbies.lock().unwrap();
+                lobbies[index].addr
             };
 
-            println!("left lobby")
+            commands.borrow_mut().push(Box::new(LeaveLobbyCmd::new(
+                Rc::clone(&user_id),
+                lobby_addr,
+                Arc::clone(&active_lobby),
+            )));
+        } else if buf == "active lobby" {
+            let active_lobby = active_lobby.lock().unwrap();
+
+            if active_lobby.1 {
+                println!("{:?}", active_lobby.0);
+            } else {
+                println!("no lobby joined");
+            }
         } else if buf == "event" {
             if let Some(ev) = event_loop.get_event() {
                 ev.execute().unwrap();
             }
         } else if buf == "clear" {
-            let _ = std::process::Command::new("clear").status();
+            commands.borrow_mut().push(Box::new(ClearCmd::new()));
         } else if buf == "quit" {
             break;
+        }
+
+        if let Some(mut cmd) = commands.borrow_mut().pop() {
+            match cmd.execute() {
+                Ok(_) => {}
+                Err(e) => println!("cmd error: {e:?}"),
+            }
         }
     }
 }
