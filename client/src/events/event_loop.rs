@@ -9,19 +9,21 @@ use anyhow::Result;
 
 use network::{SendRecv, Type};
 
+use crate::{ActiveLobby, LobbyVec, types::{BoolMutex, EventQueue, EventQueueItem}};
+
 use super::{
-    BoolMutex, EventQueue, EventQueueItem, LobbyClosingEvent, PlayerJoinedEvent, PlayerLeftEvent,
+    LobbyClosingEvent, PlayerJoinedEvent, PlayerLeftEvent,
 };
 
 pub struct EventLoop {
     running: BoolMutex,
     events: EventQueue,
-    pub addr: SocketAddr,
     handle: Option<JoinHandle<()>>,
+    pub addr: SocketAddr,
 }
 
 impl EventLoop {
-    pub fn new() -> Result<EventLoop> {
+    pub fn new(lobbies: LobbyVec, active_lobby: ActiveLobby) -> Result<EventLoop> {
         let running = Arc::new(Mutex::new(true));
         let events = Arc::new(Mutex::new(vec![]));
 
@@ -34,14 +36,14 @@ impl EventLoop {
             let running = Arc::clone(&running);
             let events = Arc::clone(&events);
 
-            thread::spawn(move || event_loop_thread(running, events, server))
+            thread::spawn(move || event_loop_thread(running, events, server, lobbies, active_lobby))
         };
 
         Ok(EventLoop {
             running,
             events,
-            addr,
             handle: Some(handle),
+            addr,
         })
     }
 
@@ -68,7 +70,13 @@ impl Drop for EventLoop {
     }
 }
 
-pub fn event_loop_thread(running: BoolMutex, events: EventQueue, server: TcpListener) {
+pub fn event_loop_thread(
+    running: BoolMutex,
+    events: EventQueue,
+    server: TcpListener,
+    lobbies: LobbyVec,
+    active_lobby: ActiveLobby,
+) {
     loop {
         {
             let running = running.lock().unwrap();
@@ -91,15 +99,25 @@ pub fn event_loop_thread(running: BoolMutex, events: EventQueue, server: TcpList
 
                 let ev: Option<EventQueueItem> = match req_type {
                     Type::PlayerJoined => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(PlayerJoinedEvent::new(buf))),
+                        Ok(buf) => Some(Box::new(PlayerJoinedEvent::new(
+                            buf,
+                            Arc::clone(&active_lobby),
+                        ))),
                         Err(_) => None,
                     },
                     Type::PlayerLeft => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(PlayerLeftEvent::new(buf))),
+                        Ok(buf) => Some(Box::new(PlayerLeftEvent::new(
+                            buf,
+                            Arc::clone(&active_lobby),
+                        ))),
                         Err(_) => None,
                     },
                     Type::LobbyClosing => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(LobbyClosingEvent::new(buf))),
+                        Ok(buf) => Some(Box::new(LobbyClosingEvent::new(
+                            buf,
+                            Arc::clone(&lobbies),
+                            Arc::clone(&active_lobby),
+                        ))),
                         Err(_) => None,
                     },
                     _ => None,
