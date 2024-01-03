@@ -1,4 +1,4 @@
-use crate::{ActiveLobby, LobbyVec};
+use crate::types::{LobbyVec, ActiveLobby};
 
 use super::{Event, EventError};
 

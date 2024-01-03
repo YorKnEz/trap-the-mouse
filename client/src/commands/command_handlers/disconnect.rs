@@ -4,7 +4,7 @@ use network::{request, Type};
 
 use crate::{
     commands::{Command, CommandError},
-    UserId, SERVER_ADDR,
+    SERVER_ADDR, types::UserId,
 };
 
 pub struct DisconnectCmd {

@@ -1,8 +1,7 @@
 use network::{request, Type};
 
 use crate::{
-    commands::{Command, CommandError},
-    ActiveLobby, UserId,
+    commands::{Command, CommandError}, types::{UserId, ActiveLobby},
 };
 
 pub struct LeaveLobbyCmd {

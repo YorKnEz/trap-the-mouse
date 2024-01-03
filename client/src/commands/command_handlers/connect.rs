@@ -4,7 +4,8 @@ use network::{request, Type};
 
 use crate::{
     commands::{Command, CommandError},
-    UserId, SERVER_ADDR,
+    types::UserId,
+    SERVER_ADDR,
 };
 
 pub struct ConnectCmd {

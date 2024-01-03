@@ -2,8 +2,7 @@ use network::{request, Type};
 
 use crate::{
     commands::{Command, CommandError},
-    types::{LobbyAddr, Player},
-    ActiveLobby, Lobby, UserId,
+    types::{LobbyAddr, Player, UserId, ActiveLobby, Lobby},
 };
 
 pub struct JoinLobbyCmd {
