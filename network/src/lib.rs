@@ -30,6 +30,7 @@ pub enum Type {
     GetLobbies,
     // lobby requests
     JoinLobby,
+    GetLobbyState,
     LeaveLobby,
     SendMessage,
     // client notifications
