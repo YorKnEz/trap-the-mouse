@@ -51,12 +51,7 @@ impl JoinLobbyRequest {
 
         let mut users = self.users.lock().unwrap();
 
-        let addr = db_user.addr.parse()?;
-
-        match users
-            .iter()
-            .position(|user| (*user).name == db_user.name && (*user).addr == addr)
-        {
+        match users.iter().position(|user| user.id == self.user_id) {
             Some(_) => {
                 return Err(ServerError::API {
                     message: "you are already connected to this lobby".to_string(),
@@ -73,7 +68,7 @@ impl JoinLobbyRequest {
                 _ => UserType::Spectator,
             },
             name: db_user.name.clone(),
-            addr,
+            addr: db_user.addr.parse()?,
         };
 
         for user in users.iter() {

@@ -54,12 +54,7 @@ impl LeaveLobbyRequest {
 
         let mut users = self.users.lock().unwrap();
 
-        let addr = db_user.addr.parse()?;
-
-        let index = match users
-            .iter()
-            .position(|user| (*user).name == db_user.name && (*user).addr == addr)
-        {
+        let index = match users.iter().position(|user| user.id == self.user_id) {
             Some(index) => index,
             None => {
                 return Err(ServerError::API {
