@@ -1,6 +1,10 @@
 use network::{request, Type};
 
-use crate::{commands::{Command, CommandError}, LobbyVec, UserId, SERVER_ADDR, types::LobbyAddr};
+use crate::{
+    commands::{Command, CommandError},
+    types::LobbyAddr,
+    LobbyVec, UserId, SERVER_ADDR,
+};
 
 pub struct GetLobbiesCmd {
     user_id: UserId,
@@ -22,8 +26,11 @@ impl GetLobbiesCmd {
 
 impl Command for GetLobbiesCmd {
     fn execute(&mut self) -> Result<(), CommandError> {
-        let mut new_lobbies: Vec<LobbyAddr> =
-            request(SERVER_ADDR, Type::GetLobbies, &(*self.user_id.borrow(), self.start, self.offset))?;
+        let mut new_lobbies: Vec<LobbyAddr> = request(
+            SERVER_ADDR,
+            Type::GetLobbies,
+            &(*self.user_id.borrow(), self.start, self.offset),
+        )?;
 
         println!("received: {new_lobbies:?}");
 

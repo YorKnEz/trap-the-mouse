@@ -2,7 +2,10 @@ use std::net::SocketAddr;
 
 use network::{request, Type};
 
-use crate::{commands::{Command, CommandError}, UserId, SERVER_ADDR};
+use crate::{
+    commands::{Command, CommandError},
+    UserId, SERVER_ADDR,
+};
 
 pub struct ConnectCmd {
     name: String,

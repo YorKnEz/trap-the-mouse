@@ -24,9 +24,6 @@ impl JoinLobbyCmd {
 
 impl Command for JoinLobbyCmd {
     fn execute(&mut self) -> Result<(), CommandError> {
-        let players: Vec<Player> =
-            request(self.lobby.addr, Type::JoinLobby, &*self.user_id.borrow())?;
-
         {
             let mut active_lobby = self.active_lobby.lock().unwrap();
 
@@ -35,6 +32,9 @@ impl Command for JoinLobbyCmd {
                     message: "you are already in a lobby".to_string(),
                 });
             }
+
+            let players: Vec<Player> =
+                request(self.lobby.addr, Type::JoinLobby, &*self.user_id.borrow())?;
 
             active_lobby.1 = true;
             active_lobby.0 = Lobby {

@@ -1,6 +1,10 @@
 use network::{request, Type};
 
-use crate::{commands::{Command, CommandError}, LobbyVec, UserId, SERVER_ADDR, types::LobbyAddr};
+use crate::{
+    commands::{Command, CommandError},
+    types::LobbyAddr,
+    LobbyVec, UserId, SERVER_ADDR,
+};
 
 pub struct CreateLobbyCmd {
     user_id: UserId,

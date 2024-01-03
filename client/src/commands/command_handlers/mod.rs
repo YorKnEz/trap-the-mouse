@@ -1,19 +1,19 @@
-mod ping;
+mod clear;
 mod connect;
+mod create_lobby;
+mod close_lobby;
 mod disconnect;
 mod get_lobbies;
-mod create_lobby;
-mod delete_lobby;
 mod join_lobby;
 mod leave_lobby;
-mod clear;
+mod ping;
 
-pub use ping::PingCmd;
+pub use clear::ClearCmd;
 pub use connect::ConnectCmd;
+pub use create_lobby::CreateLobbyCmd;
+pub use close_lobby::CloseLobbyCmd;
 pub use disconnect::DisconnectCmd;
 pub use get_lobbies::GetLobbiesCmd;
-pub use create_lobby::CreateLobbyCmd;
-pub use delete_lobby::DeleteLobbyCmd;
 pub use join_lobby::JoinLobbyCmd;
 pub use leave_lobby::LeaveLobbyCmd;
-pub use clear::ClearCmd;
+pub use ping::PingCmd;

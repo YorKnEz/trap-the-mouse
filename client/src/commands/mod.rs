@@ -1,8 +1,8 @@
-mod error;
 mod command_handlers;
+mod error;
 
-pub use error::CommandError;
 pub use command_handlers::*;
+pub use error::CommandError;
 
 pub trait Command {
     fn execute(&mut self) -> Result<(), CommandError>;

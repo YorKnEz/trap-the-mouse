@@ -2,7 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use network::{request, Type};
 
-use crate::{commands::{Command, CommandError}, SERVER_ADDR, UserId};
+use crate::{
+    commands::{Command, CommandError},
+    UserId, SERVER_ADDR,
+};
 
 pub struct DisconnectCmd {
     user_id: UserId,
@@ -10,9 +13,7 @@ pub struct DisconnectCmd {
 
 impl DisconnectCmd {
     pub fn new(user_id: Rc<RefCell<u32>>) -> DisconnectCmd {
-        DisconnectCmd {
-            user_id,
-        }
+        DisconnectCmd { user_id }
     }
 }
 

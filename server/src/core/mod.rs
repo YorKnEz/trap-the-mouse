@@ -20,7 +20,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use request_handlers::ExitRequest;
 
-use types::{RequestQueueItem, BoolMutex, RequestQueue, HandleVec};
+use types::{BoolMutex, HandleVec, RequestQueue, RequestQueueItem};
 
 const THREAD_POOL_SIZE: u32 = 2;
 
