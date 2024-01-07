@@ -7,13 +7,14 @@ use super::request_handlers::{
     BecomeRoleRequest, CloseLobbyRequest, GetLobbyStateRequest, InvalidRequest, JoinLobbyRequest,
     LeaveLobbyRequest, MakeHostRequest, PingRequest,
 };
-use super::types::{LobbyId, UsersVec};
+use super::types::{LobbyId, UsersVec, LobbyName};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
 use network::{request, SendRecv, Type};
 
 pub struct Lobby {
     pub server: ServerCore,
     pub id: LobbyId,
+    pub name: LobbyName,
     pub users: UsersVec,
 }
 
@@ -35,7 +36,7 @@ impl RequestHandler for Lobby {
                 Ok(buf) => Box::new(GetLobbyStateRequest::new(
                     stream,
                     buf,
-                    Arc::clone(&self.id),
+                    Arc::clone(&self.name),
                     Arc::clone(&self.users),
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
@@ -44,6 +45,7 @@ impl RequestHandler for Lobby {
                 Ok(buf) => Box::new(JoinLobbyRequest::new(
                     stream,
                     buf,
+                    Arc::clone(&self.name),
                     Arc::clone(&self.users),
                     self.server.db_pool.clone(),
                 )),
@@ -93,12 +95,13 @@ impl RequestHandler for Lobby {
 }
 
 impl Lobby {
-    pub fn new(addr: &str, id: u16) -> Result<Lobby> {
+    pub fn new(addr: &str, id: u16, name: String) -> Result<Lobby> {
         let server = ServerCore::new(addr)?;
 
         Ok(Lobby {
             server,
             id: Arc::new(Mutex::new(id)),
+            name: Arc::new(Mutex::new(name)),
             users: Arc::new(Mutex::new(vec![])),
         })
     }

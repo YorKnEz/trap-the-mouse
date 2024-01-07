@@ -17,6 +17,7 @@ use super::{error::ServerError, Request};
 pub struct CreateLobbyRequest {
     stream: TcpStream,
     user_id: u32,
+    name: String,
     lobby_id: LobbyId,
     lobbies: LobbyVec,
     db_pool: Pool<SqliteConnectionManager>,
@@ -25,14 +26,15 @@ pub struct CreateLobbyRequest {
 impl CreateLobbyRequest {
     pub fn new(
         stream: TcpStream,
-        user_id: u32,
+        data: (u32, String),
         lobby_id: LobbyId,
         lobbies: LobbyVec,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> CreateLobbyRequest {
         CreateLobbyRequest {
             stream,
-            user_id,
+            user_id: data.0,
+            name: data.1,
             lobby_id,
             lobbies,
             db_pool,
@@ -60,7 +62,14 @@ impl CreateLobbyRequest {
             ret
         };
 
-        let lobby = Lobby::new("127.0.0.1:0", id).unwrap();
+        // auto assign a name if none is provided
+        let lobby_name = if self.name.len() > 0 {
+            self.name.clone()
+        } else {
+            format!("Lobby {id}")
+        };
+
+        let lobby = Lobby::new("127.0.0.1:0", id, lobby_name).unwrap();
         let (addr, running) = (lobby.get_addr()?, Arc::clone(&lobby.server.running));
 
         let handle = thread::spawn(move || {

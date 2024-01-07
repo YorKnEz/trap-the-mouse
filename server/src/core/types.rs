@@ -47,19 +47,26 @@ impl UserInfoShort {
 pub type UsersVec = Arc<Mutex<Vec<UserInfo>>>;
 
 pub type LobbyId = Arc<Mutex<u16>>;
+pub type LobbyName = Arc<Mutex<String>>;
 pub type LobbyInfo = (u16, SocketAddr, BoolMutex, JoinHandle<()>);
 pub type LobbyVec = Arc<Mutex<Vec<LobbyInfo>>>;
-
-#[derive(Serialize)]
-pub struct LobbyState {
-    pub id: u16,
-    pub users: Vec<UserInfoShort>,
-}
 
 #[derive(Serialize)]
 pub struct LobbyAddr {
     pub id: u16,
     pub addr: SocketAddr,
+}
+
+#[derive(Serialize)]
+pub struct LobbyState {
+    pub name: String,
+    pub users: Vec<UserInfoShort>,
+}
+
+#[derive(Serialize)]
+pub struct LobbyStateShort {
+    pub name: String,
+    pub users: u32,
 }
 
 pub type RequestQueue = Arc<(Mutex<Vec<RequestQueueItem>>, Condvar)>;

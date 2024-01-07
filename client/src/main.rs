@@ -12,11 +12,11 @@ use std::{
 use events::EventLoop;
 
 use commands::{
-    ClearCmd, CloseLobbyCmd, CommandError, ConnectCmd, CreateLobbyCmd, DisconnectCmd,
-    GetLobbiesCmd, JoinLobbyCmd, LeaveLobbyCmd, PingCmd,
+    BecomeRoleCmd, ClearCmd, CloseLobbyCmd, CommandError, ConnectCmd, CreateLobbyCmd,
+    DisconnectCmd, GetLobbiesCmd, JoinLobbyCmd, LeaveLobbyCmd, MakeHostCmd, PingCmd,
 };
 
-use types::{ActiveLobby, CmdQueue, Lobby, LobbyVec, UserId};
+use types::{ActiveLobby, CmdQueue, Lobby, LobbyVec, UserId, UserType};
 
 const SERVER_ADDR: SocketAddr =
     SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20000);
@@ -29,6 +29,7 @@ fn main() {
     let active_lobby: ActiveLobby = Arc::new(Mutex::new((
         Lobby {
             id: 0,
+            name: String::new(),
             addr: SERVER_ADDR,
             players: vec![],
         },
@@ -44,7 +45,7 @@ fn main() {
         std::io::stdin().read_line(&mut buf).unwrap();
         buf = buf.trim().to_string();
 
-        if buf == "ping server" {
+        if buf == "ping" {
             commands
                 .borrow_mut()
                 .push(Box::new(PingCmd::new("01234567".to_string(), SERVER_ADDR)));
@@ -67,15 +68,12 @@ fn main() {
                 "01234567".to_string(),
                 lobbies[index].addr,
             )));
-        } else if buf == "create lobby" {
+        } else if buf.starts_with("create lobby") {
+            let lobby_name = buf.split(" ").nth(2).unwrap().to_string();
+
             commands.borrow_mut().push(Box::new(CreateLobbyCmd::new(
                 Rc::clone(&user_id),
-                Arc::clone(&lobbies),
-            )));
-        } else if buf.starts_with("close lobby") {
-            commands.borrow_mut().push(Box::new(CloseLobbyCmd::new(
-                Rc::clone(&user_id),
-                Arc::clone(&active_lobby),
+                lobby_name,
                 Arc::clone(&lobbies),
             )));
         } else if buf == "list lobbies" {
@@ -94,6 +92,14 @@ fn main() {
                 offset,
                 Arc::clone(&lobbies),
             )));
+        } else if buf == "active lobby" {
+            let active_lobby = active_lobby.lock().unwrap();
+
+            if active_lobby.1 {
+                println!("{}", active_lobby.0);
+            } else {
+                println!("no lobby joined");
+            }
         } else if buf.starts_with("join lobby") {
             let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
 
@@ -112,14 +118,35 @@ fn main() {
                 Rc::clone(&user_id),
                 Arc::clone(&active_lobby),
             )));
-        } else if buf == "active lobby" {
-            let active_lobby = active_lobby.lock().unwrap();
+        } else if buf == "close lobby" {
+            commands.borrow_mut().push(Box::new(CloseLobbyCmd::new(
+                Rc::clone(&user_id),
+                Arc::clone(&active_lobby),
+                Arc::clone(&lobbies),
+            )));
+        } else if buf.starts_with("make host") {
+            let id = buf.split(" ").nth(2).unwrap().parse::<u32>().unwrap();
 
-            if active_lobby.1 {
-                println!("{}", active_lobby.0);
+            commands.borrow_mut().push(Box::new(MakeHostCmd::new(
+                Rc::clone(&user_id),
+                id,
+                Arc::clone(&active_lobby),
+            )));
+        } else if buf.starts_with("become") {
+            let role = buf.split(" ").nth(1).unwrap();
+            let role = if role == "player" {
+                UserType::Player
+            } else if role == "spectator" {
+                UserType::Spectator
             } else {
-                println!("no lobby joined");
-            }
+                continue;
+            };
+
+            commands.borrow_mut().push(Box::new(BecomeRoleCmd::new(
+                Rc::clone(&user_id),
+                role,
+                Arc::clone(&active_lobby),
+            )));
         } else if buf == "event" {
             if let Some(ev) = event_loop.get_event() {
                 ev.execute().unwrap();

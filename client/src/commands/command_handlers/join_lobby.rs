@@ -2,7 +2,7 @@ use network::{request, Type};
 
 use crate::{
     commands::{Command, CommandError},
-    types::{LobbyAddr, Player, UserId, ActiveLobby, Lobby},
+    types::{LobbyAddr, UserId, ActiveLobby, Lobby, LobbyState},
 };
 
 pub struct JoinLobbyCmd {
@@ -32,14 +32,15 @@ impl Command for JoinLobbyCmd {
                 });
             }
 
-            let players: Vec<Player> =
+            let state: LobbyState =
                 request(self.lobby.addr, Type::JoinLobby, &*self.user_id.borrow())?;
 
             active_lobby.1 = true;
             active_lobby.0 = Lobby {
-                id: self.lobby.id,
+                id: state.id,
+                name: state.name.clone(),
                 addr: self.lobby.addr,
-                players,
+                players: state.users,
             }
         }
 

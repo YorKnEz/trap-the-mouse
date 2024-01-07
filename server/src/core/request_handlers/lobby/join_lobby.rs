@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{UserInfo, UserInfoShort, UserType, UsersVec},
+    types::{LobbyName, LobbyState, UserInfo, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -16,6 +16,7 @@ use super::{error::ServerError, Request};
 pub struct JoinLobbyRequest {
     stream: TcpStream,
     user_id: u32,
+    lobby_name: LobbyName,
     users: UsersVec,
     db_pool: Pool<SqliteConnectionManager>,
 }
@@ -24,18 +25,20 @@ impl JoinLobbyRequest {
     pub fn new(
         stream: TcpStream,
         user_id: u32,
+        lobby_name: LobbyName,
         users: UsersVec,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> JoinLobbyRequest {
         JoinLobbyRequest {
             stream,
             user_id,
+            lobby_name,
             users,
             db_pool,
         }
     }
 
-    fn handler(&self) -> Result<Vec<UserInfoShort>, ServerError> {
+    fn handler(&self) -> Result<LobbyState, ServerError> {
         let conn = self.db_pool.get()?;
 
         let db_user = match conn.is_connected(self.user_id) {
@@ -81,7 +84,10 @@ impl JoinLobbyRequest {
 
         users.push(new_user);
 
-        Ok(users.iter().map(|i| UserInfoShort::from(i)).collect())
+        Ok(LobbyState {
+            name: { self.lobby_name.lock().unwrap().clone() },
+            users: users.iter().map(|i| UserInfoShort::from(i)).collect(),
+        })
     }
 }
 

@@ -8,7 +8,7 @@ use std::{
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{commands::Command, events::Event};
+use crate::{events::Event, commands::Command};
 
 pub type BoolMutex = Arc<Mutex<bool>>;
 
@@ -27,7 +27,7 @@ pub enum UserType {
     Spectator,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Player {
     pub id: u32,
     pub user_type: UserType,
@@ -46,6 +46,7 @@ impl Display for Player {
 #[derive(Debug)]
 pub struct Lobby {
     pub id: u16,
+    pub name: String,
     pub addr: SocketAddr,
     pub players: Vec<Player>,
 }
@@ -54,7 +55,7 @@ impl Display for Lobby {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut display = String::new();
 
-        display += &format!("id: {}\naddr: {:?}\nplayers:\n", self.id, self.addr);
+        display += &format!("id: {}\nname: {}\naddr: {:?}\nplayers:\n", self.id, self.name, self.addr);
 
         for player in self.players.iter() {
             display += &format!("  {}\n", player);
@@ -64,9 +65,10 @@ impl Display for Lobby {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct LobbyState {
     pub id: u16,
+    pub name: String,
     pub users: Vec<Player>,
 }
 
