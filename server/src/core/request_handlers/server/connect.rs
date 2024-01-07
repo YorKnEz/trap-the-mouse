@@ -35,6 +35,12 @@ impl ConnectRequest {
     fn handler(&self) -> Result<u32, ServerError> {
         let conn = self.db_pool.get()?;
 
+        if !(2 <= self.name.len() && self.name.len() < 256) {
+            return Err(ServerError::API {
+                message: "username must be between 2 and 255 characters".to_string(),
+            });
+        }
+
         match conn.add_user(&self.name, &self.addr.to_string()) {
             Ok(_) => {}
             Err(rusqlite::Error::SqliteFailure(e, Some(m))) => {
