@@ -32,6 +32,7 @@ pub enum Type {
     FindLobby,
     CreateLobby,
     GetLobbies,
+    ChangeName,
     // lobby requests
     GetLobbyState,
     JoinLobby,
@@ -40,11 +41,12 @@ pub enum Type {
     MakeHost,
     BecomeRole,
     SendMessage,
+    ChangedName,
     // client notifications
     LobbyClosing,
     PlayerJoined,
     PlayerLeft,
-    BecameRole,
+    PlayerUpdated,
     // responses
     Success,
     Error,
