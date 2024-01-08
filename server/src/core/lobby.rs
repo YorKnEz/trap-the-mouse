@@ -89,6 +89,15 @@ impl RequestHandler for Lobby {
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
             },
+            Type::ChangedName => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(ChangedNameRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
             _ => Box::new(InvalidRequest::new(stream, "invalid request")),
         })
     }

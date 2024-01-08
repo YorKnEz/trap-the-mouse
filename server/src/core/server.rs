@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 
 use super::request_handlers::{
     ConnectRequest, CreateLobbyRequest, DisconnectRequest, GetLobbiesRequest,
-    InvalidRequest, PingRequest,
+    InvalidRequest, PingRequest, ChangeNameRequest,
 };
 use super::types::{LobbyId, LobbyVec};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
@@ -62,6 +62,14 @@ impl RequestHandler for Server {
                     stream,
                     buf,
                     Arc::clone(&self.lobbies),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::ChangeName => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(ChangeNameRequest::new(
+                    stream,
+                    buf,
                     self.server.db_pool.clone(),
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),

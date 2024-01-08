@@ -31,12 +31,14 @@ pub trait UserOps {
     const GET_USER_BY_ID: &'static str;
     const GET_USER_BY_KEY: &'static str;
     const ADD_USER: &'static str;
+    const CHANGE_USER_NAME: &'static str;
     const REMOVE_USER: &'static str;
     const TOGGLE_CONNECTED: &'static str;
 
     fn get_user_by_id(&self, id: u32) -> Result<User>;
     fn get_user_by_key(&self, name: &str, addr: &str) -> Result<User>;
     fn add_user(&self, name: &str, addr: &str) -> Result<()>;
+    fn change_user_name(&self, id: u32, name: &str) -> Result<()>;
     fn remove_user(&self, id: u32) -> Result<()>;
     fn toggle_connected(&self, id: u32) -> Result<()>;
     fn is_connected(&self, id: u32) -> Result<Option<User>>;
@@ -46,6 +48,7 @@ impl UserOps for Connection {
     const GET_USER_BY_ID: &'static str = "SELECT * FROM user WHERE id = ?1";
     const GET_USER_BY_KEY: &'static str = "SELECT * FROM user WHERE (name, addr) = (?1, ?2)";
     const ADD_USER: &'static str = "INSERT INTO user (name, addr, connected) VALUES(?1, ?2, 1)";
+    const CHANGE_USER_NAME: &'static str = "UPDATE user SET name = ?2 WHERE id = ?1";
     const REMOVE_USER: &'static str = "DELETE FROM user WHERE id = ?1";
     const TOGGLE_CONNECTED: &'static str =
         "UPDATE user SET connected = NOT connected WHERE id = (?1)";
@@ -86,6 +89,14 @@ impl UserOps for Connection {
         let mut stmt = self.prepare(Self::ADD_USER)?;
 
         stmt.execute(params![name, addr])?;
+
+        Ok(())
+    }
+
+    fn change_user_name(&self, id: u32, name: &str) -> Result<()> {
+        let mut stmt = self.prepare(Self::CHANGE_USER_NAME)?;
+
+        stmt.execute(params![id, name])?;
 
         Ok(())
     }
