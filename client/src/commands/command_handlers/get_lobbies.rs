@@ -1,44 +1,20 @@
 use network::{request, Type};
 
 use crate::{
-    commands::{Command, CommandError},
-    types::{LobbyAddr, LobbyVec, UserId},
+    commands::CommandError,
+    types::{LobbyAddrVec, UserId},
     SERVER_ADDR,
 };
 
-pub struct GetLobbiesCmd {
-    user_id: UserId,
+pub fn get_lobbies_cmd(
+    user_id: &UserId,
     start: u32,
     offset: u32,
-    lobbies: LobbyVec,
-}
+) -> Result<LobbyAddrVec, CommandError> {
+    let new_lobbies: LobbyAddrVec =
+        request(SERVER_ADDR, Type::GetLobbies, &(*user_id, start, offset))?;
 
-impl GetLobbiesCmd {
-    pub fn new(user_id: UserId, start: u32, offset: u32, lobbies: LobbyVec) -> GetLobbiesCmd {
-        GetLobbiesCmd {
-            user_id,
-            start,
-            offset,
-            lobbies,
-        }
-    }
-}
+    println!("received: {new_lobbies:?}");
 
-impl Command for GetLobbiesCmd {
-    fn execute(&mut self) -> Result<(), CommandError> {
-        let mut new_lobbies: Vec<LobbyAddr> = request(
-            SERVER_ADDR,
-            Type::GetLobbies,
-            &(*self.user_id.borrow(), self.start, self.offset),
-        )?;
-
-        println!("received: {new_lobbies:?}");
-
-        let mut lobbies = self.lobbies.lock().unwrap();
-        lobbies.append(&mut new_lobbies);
-        lobbies.sort_by_key(|a| a.id);
-        lobbies.dedup_by(|a, b| a.id == b.id);
-
-        Ok(())
-    }
+    Ok(new_lobbies)
 }

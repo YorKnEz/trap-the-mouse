@@ -1,51 +1,26 @@
+use std::net::SocketAddr;
+
 use network::{request, Type};
 
 use crate::{
-    commands::{Command, CommandError},
-    types::{LobbyAddr, UserId, ActiveLobby, Lobby, LobbyState},
+    commands::CommandError,
+    types::{Lobby, LobbyState, UserId},
 };
 
-pub struct JoinLobbyCmd {
-    user_id: UserId,
-    lobby: LobbyAddr,
-    active_lobby: ActiveLobby,
-}
-
-impl JoinLobbyCmd {
-    pub fn new(user_id: UserId, lobby: LobbyAddr, active_lobby: ActiveLobby) -> JoinLobbyCmd {
-        JoinLobbyCmd {
-            user_id,
-            lobby,
-            active_lobby,
-        }
+pub fn join_lobby_cmd(
+    user_id: &UserId,
+    lobby_addr: SocketAddr,
+    active_lobby: &Option<Lobby>,
+) -> Result<LobbyState, CommandError> {
+    if let Some(_) = active_lobby {
+        return Err(CommandError::CommandError {
+            message: "you are already in a lobby".to_string(),
+        });
     }
-}
 
-impl Command for JoinLobbyCmd {
-    fn execute(&mut self) -> Result<(), CommandError> {
-        {
-            let mut active_lobby = self.active_lobby.lock().unwrap();
+    let res: LobbyState = request(lobby_addr, Type::JoinLobby, user_id)?;
 
-            if active_lobby.1 {
-                return Err(CommandError::CommandError {
-                    message: "you are already in a lobby".to_string(),
-                });
-            }
+    println!("joined lobby");
 
-            let state: LobbyState =
-                request(self.lobby.addr, Type::JoinLobby, &*self.user_id.borrow())?;
-
-            active_lobby.1 = true;
-            active_lobby.0 = Lobby {
-                id: state.id,
-                name: state.name.clone(),
-                addr: self.lobby.addr,
-                players: state.users,
-            }
-        }
-
-        println!("joined lobby");
-
-        Ok(())
-    }
+    Ok(res)
 }

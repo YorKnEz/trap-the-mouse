@@ -1,17 +1,7 @@
-use crate::commands::{Command, CommandError};
+use crate::commands::CommandError;
 
-pub struct ClearCmd {}
+pub fn clear_cmd() -> Result<(), CommandError> {
+    std::process::Command::new("clear").status()?;
 
-impl ClearCmd {
-    pub fn new() -> ClearCmd {
-        ClearCmd {}
-    }
-}
-
-impl Command for ClearCmd {
-    fn execute(&mut self) -> Result<(), CommandError> {
-        std::process::Command::new("clear").status()?;
-
-        Ok(())
-    }
+    Ok(())
 }

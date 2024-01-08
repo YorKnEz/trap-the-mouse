@@ -9,3 +9,11 @@ pub enum CommandError {
     #[error("{message}")]
     CommandError { message: String },
 }
+
+pub fn check_error(e: CommandError) {
+    match e {
+        CommandError::InternalAnyhow(e) => println!("cmd error: {e}"),
+        CommandError::CommandError { message } => println!("cmd error: {message}"),
+        e => println!("cmd error: {}", e),
+    }
+}

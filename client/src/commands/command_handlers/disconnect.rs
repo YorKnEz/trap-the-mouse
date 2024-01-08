@@ -1,28 +1,11 @@
-use std::{cell::RefCell, rc::Rc};
-
 use network::{request, Type};
 
-use crate::{
-    commands::{Command, CommandError},
-    SERVER_ADDR, types::UserId,
-};
+use crate::{commands::CommandError, types::UserId, SERVER_ADDR};
 
-pub struct DisconnectCmd {
-    user_id: UserId,
-}
+pub fn disconnect_cmd(user_id: &UserId) -> Result<(), CommandError> {
+    request(SERVER_ADDR, Type::Disconnect, user_id)?;
 
-impl DisconnectCmd {
-    pub fn new(user_id: Rc<RefCell<u32>>) -> DisconnectCmd {
-        DisconnectCmd { user_id }
-    }
-}
+    println!("disconnected");
 
-impl Command for DisconnectCmd {
-    fn execute(&mut self) -> Result<(), CommandError> {
-        request(SERVER_ADDR, Type::Disconnect, &*self.user_id.borrow())?;
-
-        println!("disconnected");
-
-        Ok(())
-    }
+    Ok(())
 }

@@ -2,36 +2,12 @@ use std::net::SocketAddr;
 
 use network::{request, Type};
 
-use crate::{
-    commands::{Command, CommandError},
-    types::UserId,
-    SERVER_ADDR,
-};
+use crate::{commands::CommandError, types::UserId, SERVER_ADDR};
 
-pub struct ConnectCmd {
-    name: String,
-    addr: SocketAddr,
-    user_id: UserId,
-}
+pub fn connect_cmd(name: String, addr: SocketAddr) -> Result<UserId, CommandError> {
+    let res: u32 = request(SERVER_ADDR, Type::Connect, &(name.clone(), addr))?;
 
-impl ConnectCmd {
-    pub fn new(name: String, addr: SocketAddr, user_id: UserId) -> ConnectCmd {
-        ConnectCmd {
-            name,
-            addr,
-            user_id,
-        }
-    }
-}
+    println!("received: {res}");
 
-impl Command for ConnectCmd {
-    fn execute(&mut self) -> Result<(), CommandError> {
-        let user_id: u32 = request(SERVER_ADDR, Type::Connect, &(self.name.clone(), self.addr))?;
-
-        *self.user_id.borrow_mut() = user_id;
-
-        println!("received: {user_id}");
-
-        Ok(())
-    }
+    Ok(res)
 }

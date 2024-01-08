@@ -1,45 +1,22 @@
 use network::{request, Type};
 
 use crate::{
-    commands::{Command, CommandError}, types::{UserId, ActiveLobby},
+    commands::CommandError,
+    types::{Lobby, UserId},
 };
 
-pub struct LeaveLobbyCmd {
-    user_id: UserId,
-    active_lobby: ActiveLobby,
-}
-
-impl LeaveLobbyCmd {
-    pub fn new(user_id: UserId, active_lobby: ActiveLobby) -> LeaveLobbyCmd {
-        LeaveLobbyCmd {
-            user_id,
-            active_lobby,
-        }
+pub fn leave_lobby_cmd(user_id: &UserId, active_lobby: &mut Option<Lobby>) -> Result<(), CommandError> {
+    if let None = active_lobby {
+        return Err(CommandError::CommandError {
+            message: "you are not connected to a lobby".to_string(),
+        });
     }
-}
 
-impl Command for LeaveLobbyCmd {
-    fn execute(&mut self) -> Result<(), CommandError> {
-        {
-            let mut active_lobby = self.active_lobby.lock().unwrap();
+    request(active_lobby.as_ref().unwrap().addr, Type::LeaveLobby, &user_id)?;
 
-            if !active_lobby.1 {
-                return Err(CommandError::CommandError {
-                    message: "you are not connected to a lobby".to_string(),
-                });
-            }
+    *active_lobby = None;
 
-            request(
-                active_lobby.0.addr,
-                Type::LeaveLobby,
-                &*self.user_id.borrow(),
-            )?;
+    println!("left lobby");
 
-            active_lobby.1 = false;
-        }
-
-        println!("left lobby");
-
-        Ok(())
-    }
+    Ok(())
 }
