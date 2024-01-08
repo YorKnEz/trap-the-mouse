@@ -9,19 +9,23 @@ use anyhow::Result;
 
 use network::{SendRecv, Type};
 
-use crate::types::{ActiveLobby, BoolMutex, EventQueue, EventQueueItem, LobbyVec};
+use crate::types::{BoolMutex, EventQueue, EventQueueItem};
 
-use super::{BecameRoleEvent, LobbyClosingEvent, PlayerJoinedEvent, PlayerLeftEvent};
+use super::{
+    Event, LobbyClosingEvent, NetworkEvent, PlayerJoinedEvent, PlayerLeftEvent,
+    PlayerUpdatedEvent,
+};
 
 pub struct EventLoop {
     running: BoolMutex,
     events: EventQueue,
-    handle: Option<JoinHandle<()>>,
+    handles: Vec<Option<JoinHandle<()>>>,
     pub addr: SocketAddr,
+    // pub sender: mpsc::Sender<UIEvent>,
 }
 
 impl EventLoop {
-    pub fn new(lobbies: LobbyVec, active_lobby: ActiveLobby) -> Result<EventLoop> {
+    pub fn new() -> Result<EventLoop> {
         let running = Arc::new(Mutex::new(true));
         let events = Arc::new(Mutex::new(vec![]));
 
@@ -30,18 +34,30 @@ impl EventLoop {
 
         let addr = server.local_addr()?;
 
-        let handle = {
+        let mut handles = vec![];
+
+        handles.push(Some({
             let running = Arc::clone(&running);
             let events = Arc::clone(&events);
 
-            thread::spawn(move || event_loop_thread(running, events, server, lobbies, active_lobby))
-        };
+            thread::spawn(move || network_event_loop_thread(running, events, server))
+        }));
+
+        // let (sender, receiver) = mpsc::channel::<UIEvent>();
+        //
+        // handles.push(Some({
+        //     let running = Arc::clone(&running);
+        //     let events = Arc::clone(&events);
+        //
+        //     thread::spawn(move || ui_event_loop_thread(running, events, receiver))
+        // }));
 
         Ok(EventLoop {
             running,
             events,
-            handle: Some(handle),
+            handles,
             addr,
+            // sender,
         })
     }
 
@@ -61,20 +77,16 @@ impl Drop for EventLoop {
         self.stop();
 
         // can unwrap here because constructor initializes handle so it always has a value
-        match self.handle.take().unwrap().join() {
-            Ok(_) => {}
-            Err(e) => println!("thread panicked: {e:?}"),
+        for handle in self.handles.iter_mut() {
+            match handle.take().unwrap().join() {
+                Ok(_) => {}
+                Err(e) => println!("thread panicked: {e:?}"),
+            }
         }
     }
 }
 
-pub fn event_loop_thread(
-    running: BoolMutex,
-    events: EventQueue,
-    server: TcpListener,
-    lobbies: LobbyVec,
-    active_lobby: ActiveLobby,
-) {
+pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server: TcpListener) {
     loop {
         {
             let running = running.lock().unwrap();
@@ -95,34 +107,21 @@ pub fn event_loop_thread(
                     }
                 };
 
-                let ev: Option<EventQueueItem> = match req_type {
+                let ev: Option<NetworkEvent> = match req_type {
                     Type::PlayerJoined => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(PlayerJoinedEvent::new(
-                            buf,
-                            Arc::clone(&active_lobby),
-                        ))),
+                        Ok(buf) => Some(NetworkEvent::PlayerJoined(PlayerJoinedEvent::new(buf))),
                         Err(_) => None,
                     },
                     Type::PlayerLeft => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(PlayerLeftEvent::new(
-                            buf,
-                            Arc::clone(&active_lobby),
-                        ))),
+                        Ok(buf) => Some(NetworkEvent::PlayerLeft(PlayerLeftEvent::new(buf))),
+                        Err(_) => None,
+                    },
+                    Type::PlayerUpdated => match bincode::deserialize(&buf) {
+                        Ok(buf) => Some(NetworkEvent::PlayerUpdated(PlayerUpdatedEvent::new(buf))),
                         Err(_) => None,
                     },
                     Type::LobbyClosing => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(LobbyClosingEvent::new(
-                            buf,
-                            Arc::clone(&lobbies),
-                            Arc::clone(&active_lobby),
-                        ))),
-                        Err(_) => None,
-                    },
-                    Type::BecameRole => match bincode::deserialize(&buf) {
-                        Ok(buf) => Some(Box::new(BecameRoleEvent::new(
-                            buf,
-                            Arc::clone(&active_lobby),
-                        ))),
+                        Ok(buf) => Some(NetworkEvent::LobbyClosing(LobbyClosingEvent::new(buf))),
                         Err(_) => None,
                     },
                     _ => None,
@@ -132,7 +131,11 @@ pub fn event_loop_thread(
                     println!("couldn't send: {e:?}");
                 }
 
-                ev
+                if let Some(ev) = ev {
+                    Some(Event::Network(ev))
+                } else {
+                    None
+                }
             }
             Err(e) => {
                 if e.kind() == io::ErrorKind::WouldBlock {
@@ -150,3 +153,28 @@ pub fn event_loop_thread(
         }
     }
 }
+
+// pub fn ui_event_loop_thread(
+//     running: BoolMutex,
+//     events: EventQueue,
+//     receiver: mpsc::Receiver<UIEvent>,
+// ) {
+//     loop {
+//         {
+//             let running = running.lock().unwrap();
+//
+//             if !*running {
+//                 // println!("stopping loop");
+//                 break;
+//             }
+//         }
+//
+//         match receiver.try_recv() {
+//             Ok(ev) => {
+//                 let mut events = events.lock().unwrap();
+//                 events.push(Event::UI(ev));
+//             }
+//             Err(_) => {}
+//         }
+//     }
+// }
