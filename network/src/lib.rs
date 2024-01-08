@@ -1,5 +1,10 @@
 // TODO: optimize allocations for packet reading, it isnt necessary to allocate on each recv
 
+thread_local! {
+    static HEADER_BYTES: RefCell<[u8; 8]> = RefCell::new([0u8; 8]);
+}
+
+use std::cell::RefCell;
 use std::io;
 use std::net::TcpStream;
 use std::{io::prelude::*, net::ToSocketAddrs};
@@ -102,10 +107,13 @@ impl SendRecv for TcpStream {
     }
 
     fn recv(&mut self) -> Result<(Vec<u8>, Type)> {
-        let mut h = vec![0u8; std::mem::size_of::<Header>()];
-        self.read_exact(&mut h)?;
+        let h = HEADER_BYTES.with(|buf| -> Result<Header> {
+            {
+                self.read_exact(&mut *buf.borrow_mut())?;
+            }
 
-        let h: Header = bincode::deserialize(&h)?;
+            Ok(bincode::deserialize(&*buf.borrow())?)
+        })?;
 
         let mut buf = vec![0u8; h.size as usize];
         self.read_exact(&mut buf)?;
