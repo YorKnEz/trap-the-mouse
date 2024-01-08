@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{UserType, UsersVec},
+    types::{UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -53,7 +53,7 @@ impl MakeHostRequest {
 
         let mut users = self.users.lock().unwrap();
 
-        let new_host_role = {
+        let (mut new_host, mut old_host) = {
             let host = match users.iter().find(|user| user.id == self.user_id) {
                 Some(index) => index,
                 None => {
@@ -78,24 +78,23 @@ impl MakeHostRequest {
                 }
             };
 
-            user.user_type
+            (UserInfoShort::from(user), UserInfoShort::from(host))
         };
 
+        old_host.user_type = new_host.user_type;
+        new_host.user_type = UserType::Host;
+
         for user in users.iter_mut() {
-            if user.id == self.user_id {
-                user.user_type = new_host_role;
+            if user.id == old_host.id {
+                user.user_type = old_host.user_type;
             }
 
-            if user.id == self.new_host_id {
-                user.user_type = UserType::Host;
+            if user.id == new_host.id {
+                user.user_type = new_host.user_type;
             }
 
-            request(
-                user.addr,
-                Type::BecameRole,
-                &(self.new_host_id, UserType::Host),
-            )?;
-            request(user.addr, Type::BecameRole, &(self.user_id, new_host_role))?;
+            request(user.addr, Type::PlayerUpdated, &old_host)?;
+            request(user.addr, Type::PlayerUpdated, &new_host)?;
         }
 
         Ok(())

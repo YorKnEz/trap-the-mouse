@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{BoolMutex, UserType, UsersVec},
+    types::{BoolMutex, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -38,7 +38,7 @@ impl LeaveLobbyRequest {
         }
     }
 
-    fn handler(&self) -> Result<bool, ServerError> {
+    fn handler(&self) -> Result<(), ServerError> {
         let conn = self.db_pool.get()?;
 
         let db_user = match conn.is_connected(self.user_id) {
@@ -66,28 +66,40 @@ impl LeaveLobbyRequest {
         let user = users.remove(index);
 
         let find_host = user.user_type == UserType::Host;
-        let mut host_id = 0;
+        let mut new_host = None;
+        let mut old_type;
 
         for user in users.iter_mut() {
             if find_host {
-                if host_id == 0 {
+                if new_host.is_none() {
+                    // try making current user host
+                    old_type = user.user_type;
                     user.user_type = UserType::Host;
-                    host_id = user.id;
+                    new_host = Some(UserInfoShort::from(user));
+
+                    match request(user.addr, Type::PlayerUpdated, new_host.as_ref().unwrap()) {
+                        Ok(()) => {}
+                        Err(_) => {
+                            new_host = None;
+                            user.user_type = old_type;
+                            continue;
+                        }
+                    }
                 }
 
-                request(user.addr, Type::BecameRole, &(host_id, UserType::Host))?;
+                request(user.addr, Type::PlayerUpdated, new_host.as_ref().unwrap())?;
             }
 
             request(user.addr, Type::PlayerLeft, &db_user.id)?;
         }
 
         // close lobby if no new host has been found (i.e. lobby is empty)
-        if find_host && host_id == 0 {
+        if find_host && new_host.is_none() {
             let mut running = self.running.lock().unwrap();
             *running = false;
         }
 
-        Ok(find_host && host_id == 0)
+        Ok(())
     }
 }
 

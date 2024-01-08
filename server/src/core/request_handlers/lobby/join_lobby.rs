@@ -74,12 +74,10 @@ impl JoinLobbyRequest {
             addr: db_user.addr.parse()?,
         };
 
+        let new_user_short = UserInfoShort::from(&new_user);
+
         for user in users.iter() {
-            request(
-                user.addr,
-                Type::PlayerJoined,
-                &UserInfoShort::from(&new_user),
-            )?;
+            request(user.addr, Type::PlayerJoined, &new_user_short)?;
         }
 
         users.push(new_user);
@@ -87,6 +85,7 @@ impl JoinLobbyRequest {
         Ok(LobbyState {
             name: { self.lobby_name.lock().unwrap().clone() },
             users: users.iter().map(|i| UserInfoShort::from(i)).collect(),
+            game: { self.game.lock().unwrap().clone() }
         })
     }
 }

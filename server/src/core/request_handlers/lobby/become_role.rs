@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{UserType, UsersVec},
+    types::{UserType, UsersVec, UserInfoShort},
 };
 
 use super::{error::ServerError, Request};
@@ -53,8 +53,8 @@ impl BecomeRoleRequest {
 
         let mut users = self.users.lock().unwrap();
 
-        let user = match users.iter().find(|user| user.id == self.user_id) {
-            Some(user) => user,
+        let mut new_user = match users.iter().find(|user| user.id == self.user_id) {
+            Some(user) => UserInfoShort::from(user),
             None => {
                 return Err(ServerError::API {
                     message: "you are not connected to this lobby".to_string(),
@@ -62,13 +62,13 @@ impl BecomeRoleRequest {
             }
         };
 
-        if user.user_type == UserType::Host {
+        if new_user.user_type == UserType::Host {
             return Err(ServerError::API {
                 message: "you need to make someone else host".to_string(),
             });
         }
 
-        if user.user_type == self.new_role {
+        if new_user.user_type == self.new_role {
             return Err(ServerError::API {
                 message: "you already have this role".to_string(),
             });
@@ -93,12 +93,14 @@ impl BecomeRoleRequest {
             UserType::Spectator => {}
         }
 
+        new_user.user_type = self.new_role;
+
         for user in users.iter_mut() {
-            if user.id == self.user_id {
-                user.user_type = self.new_role;
+            if user.id == new_user.id {
+                user.user_type = new_user.user_type;
             }
 
-            request(user.addr, Type::BecameRole, &(self.user_id, self.new_role))?;
+            request(user.addr, Type::PlayerUpdated, &new_user)?;
         }
 
         Ok(())
