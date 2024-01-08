@@ -6,19 +6,15 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use crate::events::Event;
 use serde_derive::{Deserialize, Serialize};
-
-use crate::{events::Event, commands::Command};
 
 pub type BoolMutex = Arc<Mutex<bool>>;
 
 pub type EventQueue = Arc<Mutex<Vec<EventQueueItem>>>;
-pub type EventQueueItem = Box<dyn Event + Send>;
-
-pub type Cmd = Box<dyn Command>;
-pub type CmdQueue = Rc<RefCell<Vec<Cmd>>>;
-
-pub type UserId = Rc<RefCell<u32>>;
+pub type EventQueueItem = Event;
+pub type UserId = u32;
+pub type UserName = String;
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum UserType {
@@ -43,11 +39,29 @@ impl Display for Player {
     }
 }
 
+#[derive(Clone, Debug, Deserialize)]
+pub struct LobbyAddr {
+    pub id: u16,
+    pub addr: SocketAddr,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LobbyState {
+    pub name: String,
+    pub players: Vec<Player>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LobbyStateShort {
+    pub name: String,
+    pub players: u32,
+}
+
 #[derive(Debug)]
 pub struct Lobby {
     pub id: u16,
-    pub name: String,
     pub addr: SocketAddr,
+    pub name: String,
     pub players: Vec<Player>,
 }
 
@@ -55,7 +69,7 @@ impl Display for Lobby {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut display = String::new();
 
-        display += &format!("id: {}\nname: {}\naddr: {:?}\nplayers:\n", self.id, self.name, self.addr);
+        display += &format!("id: {}\naddr: {:?}\nplayers:\n", self.id, self.addr);
 
         for player in self.players.iter() {
             display += &format!("  {}\n", player);
@@ -65,19 +79,33 @@ impl Display for Lobby {
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct LobbyState {
-    pub id: u16,
-    pub name: String,
-    pub users: Vec<Player>,
-}
-
-#[derive(Debug, Deserialize, Clone, Copy)]
-pub struct LobbyAddr {
+#[derive(Clone, Debug)]
+pub struct LobbyShort {
     pub id: u16,
     pub addr: SocketAddr,
+    pub name: String,
+    pub players: u32,
 }
 
-pub type LobbyVec = Arc<Mutex<Vec<LobbyAddr>>>;
+pub type LobbyVec = Vec<LobbyShort>;
+pub type LobbyAddrVec = Vec<LobbyAddr>;
 
-pub type ActiveLobby = Arc<Mutex<(Lobby, bool)>>;
+/// The game state to be shared across windows
+/// Option is used because initially there is no state, throughout the code unwrap will be unused because we know for sure that the values exist because in order to get to window X part Y of state must be initialized
+pub struct GameState {
+    pub id: UserId,
+    pub name: UserName,
+    pub lobby: Option<Lobby>,
+    pub selected_lobby: Option<LobbyShort>,
+}
+pub type GameStateShared = RcCell<GameState>;
+
+pub type RcCell<T> = Rc<RefCell<T>>;
+
+#[macro_export]
+macro_rules! rc_cell {
+    ($value:expr) => {
+        Rc::new(RefCell::new($value))
+    };
+}
+
