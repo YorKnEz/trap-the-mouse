@@ -43,7 +43,7 @@ pub enum UIEvent {
     InputNoClicked(EventData),
     InputChanged{value: String},
     LobbyCardClicked(LobbyCardEventData),
-    LobbyCardNoClicked(LobbyCardEventData),
+    // LobbyCardNoClicked(LobbyCardEventData),
     PlayerCardClicked(PlayerCardEventData),
-    PlayerCardNoClicked(PlayerCardEventData),
+    // PlayerCardNoClicked(PlayerCardEventData),
 }

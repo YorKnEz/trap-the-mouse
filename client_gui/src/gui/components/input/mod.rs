@@ -82,6 +82,10 @@ impl EventHandlerMut for Input {
 }
 
 impl Clickable for Input {
+    fn get_id(&self) -> u32 {
+        self.event_data.id
+    }
+
     fn click(&mut self, _x: u32, _y: u32) {
         if let Err(e) = self.sender.send(UIEvent::InputClicked(self.event_data)) {
             println!("send error: {e:?}");

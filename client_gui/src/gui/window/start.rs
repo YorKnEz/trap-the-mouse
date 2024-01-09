@@ -10,14 +10,13 @@ use crate::{
     events::{Event, UIEvent, Window},
     gui::components::{Button, Clicker, EventHandler},
     rc_cell,
-    types::{GameStateShared, RcCell},
-    BUTTON_HEIGHT, BUTTON_WIDTH, PADDING, WINDOW_SIZE
+    types::RcCell,
+    BUTTON_HEIGHT, BUTTON_WIDTH, PADDING, WINDOW_SIZE,
 };
 
 pub struct StartWindow<'a> {
-    window: Window,
-    state: GameStateShared,
-
+    // window: Window,
+    // state: GameStateShared,
     buttons: Vec<RcCell<Button<'a>>>,
     clicker: Clicker<'a>,
 }
@@ -27,7 +26,7 @@ impl<'a> StartWindow<'a> {
         window: Window,
         font: &'a RcFont,
         sender: mpsc::Sender<UIEvent>,
-        state: GameStateShared,
+        // state: GameStateShared,
     ) -> StartWindow<'a> {
         let x = WINDOW_SIZE / 2f32 - BUTTON_WIDTH / 2f32;
         let y = WINDOW_SIZE / 2f32 - BUTTON_HEIGHT;
@@ -52,8 +51,8 @@ impl<'a> StartWindow<'a> {
         }
 
         StartWindow {
-            window,
-            state,
+            // window,
+            // state,
             buttons,
             clicker: Clicker::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
         }

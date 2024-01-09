@@ -19,7 +19,7 @@ pub fn become_role_cmd(
     request(
         active_lobby.as_ref().unwrap().addr,
         Type::BecomeRole,
-        &(user_id, user_type),
+        &(*user_id, user_type),
     )?;
 
     println!("will become {:?}", user_type);

@@ -83,6 +83,8 @@ impl<'a> LobbiesWindow<'a> {
             )),
             clicker: Clicker::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
             lobbies_scrollable: rc_cell!(Scrollable::new(
+                4,
+                window,
                 WINDOW_SIZE / 2f32 - 300f32,
                 40f32,
                 600f32,
@@ -221,17 +223,17 @@ impl<'a> EventHandler for LobbiesWindow<'a> {
             {
                 (*self.state.borrow_mut()).selected_lobby = Some(event_data.data);
             }
-            Event::UI(UIEvent::LobbyCardNoClicked(event_data))
-                if event_data.window == self.window =>
-            {
-                // let mut selected = self.selected.borrow_mut();
-                //
-                // if let Some(data) = selected.as_ref() {
-                //     if data.id == event_data.data.id {
-                //         *selected = None;
-                //     }
-                // }
-            }
+            // Event::UI(UIEvent::LobbyCardNoClicked(event_data))
+            //     if event_data.window == self.window =>
+            // {
+            //     let mut selected = self.selected.borrow_mut();
+            //
+            //     if let Some(data) = selected.as_ref() {
+            //         if data.id == event_data.data.id {
+            //             *selected = None;
+            //         }
+            //     }
+            // }
             _ => {}
         }
 

@@ -147,14 +147,12 @@ fn main() {
                 }
             }
         } else if buf == "leave lobby" {
-            let id = state.id;
-            match leave_lobby_cmd(&id, &mut state.lobby) {
+            match leave_lobby_cmd(&state.id.clone(), &mut state.lobby) {
                 Ok(_) => {}
                 Err(e) => check_error(e),
             }
         } else if buf == "close lobby" {
-            let id = state.id;
-            match close_lobby_cmd(&id, &mut state.lobby) {
+            match close_lobby_cmd(&state.id.clone(), &mut state.lobby) {
                 Ok(id) => lobbies.retain(|a| a.id != id),
                 Err(e) => check_error(e),
             }
