@@ -36,6 +36,20 @@ fn main() {
         selected_lobby: None,
     });
 
+    let event_loop = EventLoop::new().unwrap();
+
+    {
+        let mut game_state = game_state.borrow_mut();
+
+        match connect_cmd(game_state.name.clone(), event_loop.addr) {
+            Ok(id) => game_state.id = id,
+            Err(e) => {
+                check_error(e);
+                panic!("cannot connect to server");
+            }
+        }
+    }
+
     let mut window = RenderWindow::new(
         (WINDOW_SIZE as u32, WINDOW_SIZE as u32),
         WINDOW_TITLE,
@@ -56,8 +70,6 @@ fn main() {
     let bg_texture = Texture::from_file("./client_gui/assets/bg.png").unwrap();
     let mut bg = Sprite::with_texture(&bg_texture);
     bg.set_position((0.0, 0.0));
-
-    let event_loop = EventLoop::new().unwrap();
 
     let font =
         RcFont::from_file("./client_gui/assets/montserrat-regular.ttf").expect("cannot load font");
@@ -102,18 +114,6 @@ fn main() {
     game_window.init();
 
     let current_window: RcCell<&dyn WindowState> = rc_cell!(&start_window);
-
-    {
-        let mut game_state = game_state.borrow_mut();
-
-        match connect_cmd(game_state.name.clone(), event_loop.addr) {
-            Ok(id) => game_state.id = id,
-            Err(e) => {
-                check_error(e);
-                panic!("cannot connect to server");
-            }
-        }
-    }
 
     {
         if let Err(e) = current_window.borrow().enter() {
