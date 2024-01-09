@@ -144,6 +144,10 @@ impl<'a> EventHandlerMut for LobbyCard<'a> {
 }
 
 impl<'a> Clickable for LobbyCard<'a> {
+    fn get_id(&self) -> u32 {
+        self.event_data.id
+    }
+
     fn click(&mut self, _x: u32, _y: u32) {
         self.selected = !self.selected;
 

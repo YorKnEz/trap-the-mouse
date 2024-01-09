@@ -6,7 +6,7 @@ use sfml::{
 };
 
 use crate::{
-    commands::{change_name_cmd, check_error, create_lobby_cmd},
+    commands::{check_error, create_lobby_cmd},
     events::{Event, UIEvent, Window},
     gui::components::{Button, Clicker, EventHandler, Input, EventHandlerMut},
     rc_cell,
@@ -117,7 +117,7 @@ impl<'a> EventHandler for CreateLobbyWindow<'a> {
         match e {
             Event::SFML(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {
-                    self.clicker.click(x as u32, y as u32);
+                    self.clicker.click(x, y);
                 }
             }
             Event::UI(UIEvent::InputChanged { value }) => {

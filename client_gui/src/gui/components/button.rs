@@ -3,8 +3,7 @@ use std::sync::mpsc;
 use sfml::{
     graphics::{
         Color, Drawable, FloatRect, RcFont, RcText, RectangleShape, Shape, TextStyle, Transformable,
-    },
-    system::Vector2f,
+    }, system::Vector2f,
 };
 
 use crate::events::{EventData, UIEvent, Window};
@@ -77,12 +76,17 @@ impl<'a> Fixed for Button<'a> {
         self.bounds
     }
 
-    fn set_bounds(&mut self, new_bounds: FloatRect) {
-        self.bounds = new_bounds;
+    fn set_bounds(&mut self, _new_bounds: FloatRect) {
+        // don't allow bounds setting
+        // self.bounds = new_bounds;
     }
 }
 
 impl<'a> Clickable for Button<'a> {
+    fn get_id(&self) -> u32 {
+        self.event_data.id
+    }
+
     fn click(&mut self, _x: u32, _y: u32) {
         if let Err(e) = self.sender.send(UIEvent::ButtonClicked(self.event_data)) {
             println!("send error: {e:?}");
@@ -106,8 +110,13 @@ impl<'a> Drawable for Button<'a> {
 impl<'a> Transformable for Button<'a> {
     fn set_position<P: Into<Vector2f>>(&mut self, position: P) {
         let new_pos: sfml::system::Vector2f = position.into();
+
         let old_pos = self.position();
         let offset = (new_pos.x - old_pos.x, new_pos.y - old_pos.y);
+
+        // update bounds as well
+        self.bounds.left = new_pos.x;
+        self.bounds.top = new_pos.y;
 
         self.rect.set_position(new_pos);
 

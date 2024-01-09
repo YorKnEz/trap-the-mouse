@@ -6,12 +6,13 @@ use sfml::{
     window::Key,
 };
 
-use crate::{events::Event, types::RcCell, WINDOW_SIZE};
+use crate::{events::{Event, EventData, Window}, types::RcCell, WINDOW_SIZE};
 
 use super::{Clickable, EventHandlerMut, Fixed, Scrollbar};
 
 /// Component that retains a list of T and renders them in a scrollable environment
 pub struct Scrollable<'a, T> {
+    event_data: EventData,
     bounds: FloatRect,
     scrollbar: Scrollbar<'a>,
     bg: RectangleShape<'a>,
@@ -25,7 +26,7 @@ where
     pub const PADDING: f32 = 10f32;
     pub const SCROLLBAR_WIDTH: f32 = 20f32;
 
-    pub fn new(left: f32, top: f32, width: f32, height: f32) -> Scrollable<'a, T> {
+    pub fn new(id:u32, window: Window, left: f32, top: f32, width: f32, height: f32) -> Scrollable<'a, T> {
         let bounds = FloatRect {
             left,
             top,
@@ -47,6 +48,7 @@ where
         bg.set_fill_color(Color::rgb(45, 45, 45));
 
         Scrollable {
+            event_data: EventData { id, window },
             bounds,
             scrollbar,
             bg,
@@ -250,6 +252,10 @@ impl<'a, T> Clickable for Scrollable<'a, T>
 where
     T: Transformable + Fixed + Clickable,
 {
+    fn get_id(&self) -> u32 {
+        self.event_data.id
+    }
+
     fn click(&mut self, x: u32, y: u32) {
         // decide where if the user clicked on a visible component
         for item in &mut self.list {
