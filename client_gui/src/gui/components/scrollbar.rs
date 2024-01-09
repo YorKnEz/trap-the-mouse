@@ -1,4 +1,7 @@
-use sfml::graphics::{Color, Drawable, RectangleShape, Shape, Transformable, FloatRect};
+use sfml::{
+    graphics::{Color, Drawable, FloatRect, RectangleShape, Shape, Transformable},
+    system::Vector2f,
+};
 
 use super::Fixed;
 
@@ -53,7 +56,7 @@ impl<'a> Scrollbar<'a> {
     }
 
     pub fn resize_with(&mut self, new_height: f32) {
-        let bar = self.scrollbar.bounds();
+        let bar = self.scrollbar.global_bounds();
         self.scrollable_height += new_height;
         self.ratio = bar.height / self.scrollable_height;
 
@@ -65,8 +68,8 @@ impl<'a> Scrollbar<'a> {
     }
 
     pub fn scroll_by(&mut self, delta: f32, offset: f32) -> f32 {
-        let thumb = self.thumb.bounds();
-        let bar = self.scrollbar.bounds();
+        let thumb = self.thumb.global_bounds();
+        let bar = self.scrollbar.global_bounds();
 
         let new_thumb_offset = if delta > 0f32 {
             bar.top.max(thumb.top - delta * self.ratio * offset)
@@ -83,8 +86,8 @@ impl<'a> Scrollbar<'a> {
     }
 
     pub fn scroll_to(&mut self, offset: f32) -> f32 {
-        let thumb = self.thumb.bounds();
-        let bar = self.scrollbar.bounds();
+        let thumb = self.thumb.global_bounds();
+        let bar = self.scrollbar.global_bounds();
 
         let new_thumb_offset = ((bar.top + self.ratio * offset).max(bar.top) + thumb.height)
             .min(bar.top + bar.height)
@@ -96,8 +99,8 @@ impl<'a> Scrollbar<'a> {
     }
 
     pub fn scrolled(&self) -> f32 {
-        let thumb = self.thumb.bounds();
-        let bar = self.scrollbar.bounds();
+        let thumb = self.thumb.global_bounds();
+        let bar = self.scrollbar.global_bounds();
 
         (thumb.top - bar.top) / self.ratio
     }
@@ -108,8 +111,24 @@ impl<'a> Fixed for Scrollbar<'a> {
         self.bounds
     }
 
-    fn set_bounds(&mut self, new_bounds: FloatRect) {
-        self.bounds = new_bounds;
+    fn position(&self) -> Vector2f {
+        (self.bounds.left, self.bounds.top).into()
+    }
+
+    fn set_position(&mut self, position: Vector2f) {
+        let mut old_pos = self.position();
+        let offset = Vector2f::new(position.x - old_pos.x, position.y - old_pos.y);
+
+        self.bounds.left = position.x;
+        self.bounds.top = position.y;
+
+        old_pos = self.scrollbar.position();
+        self.scrollbar
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.thumb.position();
+        self.thumb
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
     }
 }
 

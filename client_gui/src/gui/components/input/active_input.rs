@@ -2,6 +2,7 @@ use std::sync::mpsc;
 
 use sfml::{
     graphics::{Color, Drawable, FloatRect, RcText, RectangleShape, Shape, Transformable},
+    system::Vector2f,
     window::Key,
 };
 
@@ -68,7 +69,7 @@ impl<'a> ActiveInput<'a> {
             let cursor_pos = self.cursor.position();
             let mut new_left = self.text.find_character_pos(self.cursor_pos).x;
 
-            let left_limit = self.side_bg[0].bounds();
+            let left_limit = self.side_bg[0].global_bounds();
 
             if new_left < left_limit.left + left_limit.width {
                 let text_pos = self.text.position();
@@ -89,7 +90,7 @@ impl<'a> ActiveInput<'a> {
             let cursor_pos = self.cursor.position();
             let mut new_left = self.text.find_character_pos(self.cursor_pos).x;
 
-            let right_limit = self.side_bg[1].bounds();
+            let right_limit = self.side_bg[1].global_bounds();
 
             if new_left > right_limit.left {
                 let text_pos = self.text.position();
@@ -104,8 +105,8 @@ impl<'a> ActiveInput<'a> {
 
     fn shift(&mut self) {
         let cursor = self.text.find_character_pos(self.buf.len()).x;
-        let left = self.side_bg[0].bounds();
-        let limit = (left.left + left.width, self.side_bg[1].bounds().left);
+        let left = self.side_bg[0].global_bounds();
+        let limit = (left.left + left.width, self.side_bg[1].global_bounds().left);
 
         if cursor < limit.1 {
             let pos = self.text.position();
@@ -121,8 +122,8 @@ impl<'a> ActiveInput<'a> {
         self.range = (0, self.buf.len());
 
         if self.buf.len() > 0 {
-            let left = self.side_bg[0].bounds();
-            let limit = (left.left + left.width, self.side_bg[1].bounds().left);
+            let left = self.side_bg[0].global_bounds();
+            let limit = (left.left + left.width, self.side_bg[1].global_bounds().left);
 
             while self.text.find_character_pos(self.range.0 + 1).x <= limit.0 {
                 self.range.0 += 1;
@@ -244,8 +245,38 @@ impl<'a> Fixed for ActiveInput<'a> {
         self.bounds
     }
 
-    fn set_bounds(&mut self, new_bounds: FloatRect) {
-        self.bounds = new_bounds;
+    fn position(&self) -> Vector2f {
+        (self.bounds.left, self.bounds.top).into()
+    }
+
+    fn set_position(&mut self, position: Vector2f) {
+        let mut old_pos = self.position();
+        let offset = Vector2f::new(position.x - old_pos.x, position.y - old_pos.y);
+
+        self.bounds.left = position.x;
+        self.bounds.top = position.y;
+
+        old_pos = self.bg.position();
+        self.bg
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.side_bg[0].position();
+        self.side_bg[0].set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.side_bg[1].position();
+        self.side_bg[1].set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.text.position();
+        self.text
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.copy_text.position();
+        self.copy_text
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.cursor.position();
+        self.cursor
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
     }
 }
 

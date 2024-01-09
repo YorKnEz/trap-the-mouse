@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc};
 use anyhow::anyhow;
 use sfml::{
     graphics::{Drawable, RcFont, RcText, Transformable},
-    window::mouse,
+    window::mouse, system::Vector2f,
 };
 
 use crate::{
@@ -173,7 +173,7 @@ impl<'a> GameWindow<'a> {
             let button = &self.buttons[*b];
             button
                 .borrow_mut()
-                .set_position((x, y + i as f32 * (PADDING + BUTTON_HEIGHT)));
+                .set_position(Vector2f::new(x, y + i as f32 * (PADDING + BUTTON_HEIGHT)));
             self.clicker.add_clickable(button.clone());
         }
     }

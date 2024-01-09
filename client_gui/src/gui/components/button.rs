@@ -3,7 +3,8 @@ use std::sync::mpsc;
 use sfml::{
     graphics::{
         Color, Drawable, FloatRect, RcFont, RcText, RectangleShape, Shape, TextStyle, Transformable,
-    }, system::Vector2f,
+    },
+    system::Vector2f,
 };
 
 use crate::events::{EventData, UIEvent, Window};
@@ -13,7 +14,7 @@ use super::{clicker::Clickable, Fixed};
 pub struct Button<'a> {
     event_data: EventData,
     bounds: FloatRect,
-    rect: RectangleShape<'a>,
+    bg: RectangleShape<'a>,
     text: RcText,
     sender: mpsc::Sender<UIEvent>,
 }
@@ -40,16 +41,16 @@ impl<'a> Button<'a> {
             height,
         };
 
-        let mut rect = RectangleShape::new();
-        rect.set_size(Vector2f::new(
+        let mut bg = RectangleShape::new();
+        bg.set_size(Vector2f::new(
             width as f32 - 2f32 * Button::BORDER,
             height as f32 - 2f32 * Button::BORDER,
         ));
-        rect.set_position((left + Button::BORDER, top + Button::BORDER));
-        rect.set_fill_color(Color::rgb(53, 232, 101));
+        bg.set_position((left + Button::BORDER, top + Button::BORDER));
+        bg.set_fill_color(Color::rgb(53, 232, 101));
 
-        rect.set_outline_thickness(Button::BORDER);
-        rect.set_outline_color(Color::rgb(45, 168, 78));
+        bg.set_outline_thickness(Button::BORDER);
+        bg.set_outline_color(Color::rgb(45, 168, 78));
 
         let mut text = RcText::new(text, font, 20);
         text.set_style(TextStyle::BOLD);
@@ -64,7 +65,7 @@ impl<'a> Button<'a> {
         Button {
             event_data: EventData { window, id },
             bounds,
-            rect,
+            bg,
             text,
             sender,
         }
@@ -76,9 +77,28 @@ impl<'a> Fixed for Button<'a> {
         self.bounds
     }
 
-    fn set_bounds(&mut self, _new_bounds: FloatRect) {
-        // don't allow bounds setting
-        // self.bounds = new_bounds;
+    // fn set_bounds(&mut self, _new_bounds: FloatRect) {
+    //     // don't allow bounds setting
+    //     // self.bounds = new_bounds;
+    // }
+
+    fn position(&self) -> Vector2f {
+        (self.bounds.left, self.bounds.top).into()
+    }
+
+    fn set_position(&mut self, position: Vector2f) {
+        let mut old_pos = self.position();
+        let offset = Vector2f::new(position.x - old_pos.x, position.y - old_pos.y);
+
+        self.bounds.left = position.x;
+        self.bounds.top = position.y;
+
+        old_pos = self.bg.position();
+        self.bg.set_position(Vector2f::new(old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.text.position();
+        self.text
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
     }
 }
 
@@ -102,74 +122,7 @@ impl<'a> Drawable for Button<'a> {
         target: &mut dyn sfml::graphics::RenderTarget,
         _: &sfml::graphics::RenderStates<'texture, 'shader, 'shader_texture>,
     ) {
-        target.draw(&self.rect);
+        target.draw(&self.bg);
         target.draw(&self.text);
-    }
-}
-
-impl<'a> Transformable for Button<'a> {
-    fn set_position<P: Into<Vector2f>>(&mut self, position: P) {
-        let new_pos: sfml::system::Vector2f = position.into();
-
-        let old_pos = self.position();
-        let offset = (new_pos.x - old_pos.x, new_pos.y - old_pos.y);
-
-        // update bounds as well
-        self.bounds.left = new_pos.x;
-        self.bounds.top = new_pos.y;
-
-        self.rect.set_position(new_pos);
-
-        let old_pos = self.text.position();
-        self.text
-            .set_position((old_pos.x + offset.0, old_pos.y + offset.1));
-    }
-
-    fn position(&self) -> Vector2f {
-        self.rect.position()
-    }
-
-    fn set_rotation(&mut self, angle: f32) {
-        todo!()
-    }
-
-    fn set_scale<S: Into<Vector2f>>(&mut self, scale: S) {
-        todo!()
-    }
-
-    fn set_origin<O: Into<Vector2f>>(&mut self, origin: O) {
-        todo!()
-    }
-
-    fn rotation(&self) -> f32 {
-        todo!()
-    }
-
-    fn get_scale(&self) -> Vector2f {
-        todo!()
-    }
-
-    fn origin(&self) -> Vector2f {
-        todo!()
-    }
-
-    fn move_<O: Into<Vector2f>>(&mut self, offset: O) {
-        todo!()
-    }
-
-    fn rotate(&mut self, angle: f32) {
-        todo!()
-    }
-
-    fn scale<F: Into<Vector2f>>(&mut self, factors: F) {
-        todo!()
-    }
-
-    fn transform(&self) -> &sfml::graphics::Transform {
-        todo!()
-    }
-
-    fn inverse_transform(&self) -> &sfml::graphics::Transform {
-        todo!()
     }
 }

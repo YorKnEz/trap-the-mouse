@@ -1,8 +1,8 @@
 use std::sync::mpsc;
 
-use sfml::graphics::{
+use sfml::{graphics::{
     Color, Drawable, FloatRect, RcFont, RcText, RectangleShape, Shape, Transformable,
-};
+}, system::Vector2f};
 
 use crate::{
     events::{Event, PlayerCardEventData, UIEvent, Window},
@@ -183,9 +183,32 @@ impl<'a> Fixed for PlayerCard<'a> {
         self.bounds
     }
 
-    fn set_bounds(&mut self, new_bounds: FloatRect) {
-        self.bounds = new_bounds;
-        self.set_position((self.bounds.left, self.bounds.top));
+    // fn set_bounds(&mut self, new_bounds: FloatRect) {
+    //     self.bounds = new_bounds;
+    //     self.set_position((self.bounds.left, self.bounds.top));
+    // }
+
+    fn position(&self) -> Vector2f {
+        (self.bounds.left, self.bounds.top).into()
+    }
+
+    fn set_position(&mut self, position: Vector2f) {
+        let mut old_pos = self.position();
+        let offset = Vector2f::new(position.x - old_pos.x, position.y - old_pos.y);
+
+        self.bounds.left = position.x;
+        self.bounds.top = position.y;
+
+        old_pos = self.bg.position();
+        self.bg.set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.name.position();
+        self.name
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.user_type.position();
+        self.user_type
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
     }
 }
 
@@ -198,71 +221,5 @@ impl<'a> Drawable for PlayerCard<'a> {
         target.draw(&self.bg);
         target.draw(&self.name);
         target.draw(&self.user_type);
-    }
-}
-
-impl<'a> Transformable for PlayerCard<'a> {
-    fn set_position<P: Into<sfml::system::Vector2f>>(&mut self, position: P) {
-        let new_pos: sfml::system::Vector2f = position.into();
-        let old_pos = self.position();
-        let offset = (new_pos.x - old_pos.x, new_pos.y - old_pos.y);
-
-        self.bg.set_position(new_pos);
-
-        let old_pos = self.name.position();
-        self.name
-            .set_position((old_pos.x + offset.0, old_pos.y + offset.1));
-
-        let old_pos = self.user_type.position();
-        self.user_type
-            .set_position((old_pos.x + offset.0, old_pos.y + offset.1));
-    }
-
-    fn position(&self) -> sfml::system::Vector2f {
-        self.bg.position()
-    }
-
-    fn set_rotation(&mut self, angle: f32) {
-        todo!()
-    }
-
-    fn set_scale<S: Into<sfml::system::Vector2f>>(&mut self, scale: S) {
-        todo!()
-    }
-
-    fn set_origin<O: Into<sfml::system::Vector2f>>(&mut self, origin: O) {
-        todo!()
-    }
-
-    fn rotation(&self) -> f32 {
-        todo!()
-    }
-
-    fn get_scale(&self) -> sfml::system::Vector2f {
-        todo!()
-    }
-
-    fn origin(&self) -> sfml::system::Vector2f {
-        todo!()
-    }
-
-    fn move_<O: Into<sfml::system::Vector2f>>(&mut self, offset: O) {
-        todo!()
-    }
-
-    fn rotate(&mut self, angle: f32) {
-        todo!()
-    }
-
-    fn scale<F: Into<sfml::system::Vector2f>>(&mut self, factors: F) {
-        todo!()
-    }
-
-    fn transform(&self) -> &sfml::graphics::Transform {
-        todo!()
-    }
-
-    fn inverse_transform(&self) -> &sfml::graphics::Transform {
-        todo!()
     }
 }

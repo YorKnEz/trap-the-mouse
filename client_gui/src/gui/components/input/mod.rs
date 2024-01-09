@@ -104,8 +104,16 @@ impl Fixed for Input {
         self.state.as_ref().unwrap().bounds()
     }
 
-    fn set_bounds(&mut self, new_bounds: FloatRect) {
-        self.state.as_mut().unwrap().set_bounds(new_bounds);
+    // fn set_bounds(&mut self, new_bounds: FloatRect) {
+    //     self.state.as_mut().unwrap().set_bounds(new_bounds);
+    // }
+
+    fn position(&self) -> sfml::system::Vector2f {
+        self.state.as_ref().unwrap().position()
+    }
+
+    fn set_position(&mut self, position: sfml::system::Vector2f) {
+        self.state.as_mut().unwrap().set_position(position);
     }
 }
 

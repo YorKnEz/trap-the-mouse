@@ -3,10 +3,15 @@ use sfml::{
         Color, Drawable, FloatRect, IntRect, RectangleShape, RenderTarget, RenderTexture, Shape,
         Sprite, Transformable,
     },
+    system::Vector2f,
     window::Key,
 };
 
-use crate::{events::{Event, EventData, Window}, types::RcCell, WINDOW_SIZE};
+use crate::{
+    events::{Event, EventData, Window},
+    types::RcCell,
+    WINDOW_SIZE,
+};
 
 use super::{Clickable, EventHandlerMut, Fixed, Scrollbar};
 
@@ -26,7 +31,14 @@ where
     pub const PADDING: f32 = 10f32;
     pub const SCROLLBAR_WIDTH: f32 = 20f32;
 
-    pub fn new(id:u32, window: Window, left: f32, top: f32, width: f32, height: f32) -> Scrollable<'a, T> {
+    pub fn new(
+        id: u32,
+        window: Window,
+        left: f32,
+        top: f32,
+        width: f32,
+        height: f32,
+    ) -> Scrollable<'a, T> {
         let bounds = FloatRect {
             left,
             top,
@@ -68,20 +80,16 @@ where
                 self.scrollbar
                     .resize_with(pos.height + Scrollable::<T>::PADDING);
                 let last_pos = last_item.bounds();
-                item_inner.set_bounds(FloatRect::new(
+                item_inner.set_position(Vector2f::new(
                     self.bounds.left + Scrollable::<T>::PADDING,
                     last_pos.top + last_pos.height + Scrollable::<T>::PADDING,
-                    pos.width,
-                    pos.height,
                 ));
             } else {
                 self.scrollbar
                     .resize_with(pos.height + 2f32 * Scrollable::<T>::PADDING);
-                item_inner.set_bounds(FloatRect::new(
+                item_inner.set_position(Vector2f::new(
                     self.bounds.left + Scrollable::<T>::PADDING,
                     self.bounds.top + Scrollable::<T>::PADDING,
-                    pos.width,
-                    pos.height,
                 ));
             }
 
@@ -131,11 +139,9 @@ where
                     for item in &mut self.list[temp_range] {
                         let mut item = item.borrow_mut();
                         let bounds = item.bounds();
-                        item.set_bounds(FloatRect::new(
+                        item.set_position(Vector2f::new(
                             bounds.left,
                             bounds.top + shift,
-                            bounds.width,
-                            bounds.height,
                         ));
                     }
 
@@ -161,12 +167,7 @@ where
         for item in &mut self.list[range] {
             let mut item = item.borrow_mut();
             let bounds = item.bounds();
-            item.set_bounds(FloatRect::new(
-                bounds.left,
-                bounds.top + shift,
-                bounds.width,
-                bounds.height,
-            ));
+            item.set_position(Vector2f::new(bounds.left, bounds.top + shift));
         }
 
         rem_item
@@ -185,12 +186,7 @@ where
         for item in &mut self.list {
             let mut item = item.borrow_mut();
             let pos = item.bounds();
-            item.set_bounds(FloatRect::new(
-                pos.left,
-                pos.top + offset,
-                pos.width,
-                pos.height,
-            ));
+            item.set_position(Vector2f::new(pos.left, pos.top + offset));
         }
     }
 
@@ -200,12 +196,7 @@ where
         for item in &mut self.list {
             let mut item = item.borrow_mut();
             let pos = item.bounds();
-            item.set_bounds(FloatRect::new(
-                pos.left,
-                top - offset,
-                pos.width,
-                pos.height,
-            ));
+            item.set_position(Vector2f::new(pos.left, top - offset));
 
             top += pos.height + Scrollable::<'a, T>::PADDING;
         }
@@ -250,7 +241,7 @@ where
 // we use a raw check instead of using the clicker structure because a scrollable object often updates which would cause a lot of buffer updates on the clickable
 impl<'a, T> Clickable for Scrollable<'a, T>
 where
-    T: Transformable + Fixed + Clickable,
+    T: Fixed + Clickable,
 {
     fn get_id(&self) -> u32 {
         self.event_data.id
@@ -296,31 +287,57 @@ where
 
 impl<'b, T> Fixed for Scrollable<'b, T>
 where
-    T: Fixed + Transformable,
+    T: Fixed,
 {
     fn bounds(&self) -> FloatRect {
         self.bounds
     }
 
-    fn set_bounds(&mut self, new_bounds: FloatRect) {
-        let offset = (
-            new_bounds.left - self.bounds.left,
-            new_bounds.top - self.bounds.top,
-        );
+    // fn set_bounds(&mut self, new_bounds: FloatRect) {
+    //     let offset = (
+    //         new_bounds.left - self.bounds.left,
+    //         new_bounds.top - self.bounds.top,
+    //     );
+    //
+    //     for item in &mut self.list {
+    //         let mut item = item.borrow_mut();
+    //         let pos = item.bounds();
+    //         item.set_position((pos.left + offset.0, pos.top + offset.1));
+    //     }
+    //
+    //     self.bounds = new_bounds;
+    // }
+
+    fn position(&self) -> Vector2f {
+        (self.bounds.left, self.bounds.top).into()
+    }
+
+    fn set_position(&mut self, position: Vector2f) {
+        let mut old_pos = self.position();
+        let offset = Vector2f::new(position.x - old_pos.x, position.y - old_pos.y);
+
+        self.bounds.left = position.x;
+        self.bounds.top = position.y;
+
+        old_pos = self.bg.position();
+        self.bg
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+
+        old_pos = self.scrollbar.position();
+        self.scrollbar
+            .set_position(Vector2f::new(old_pos.x + offset.x, old_pos.y + offset.y));
 
         for item in &mut self.list {
             let mut item = item.borrow_mut();
-            let pos = item.bounds();
-            item.set_position((pos.left + offset.0, pos.top + offset.1));
+            old_pos = item.position();
+            item.set_position(Vector2f::new(old_pos.x + offset.x, old_pos.y + offset.y));
         }
-
-        self.bounds = new_bounds;
     }
 }
 
 impl<'b, T> Drawable for Scrollable<'b, T>
 where
-    T: Drawable + Fixed + Transformable,
+    T: Drawable + Fixed,
 {
     fn draw<'a: 'shader, 'texture, 'shader, 'shader_texture>(
         &'a self,

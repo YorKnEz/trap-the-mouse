@@ -165,8 +165,28 @@ impl Fixed for Game {
         self.bounds
     }
 
-    fn set_bounds(&mut self, _: FloatRect) {
-        // don't allow bounds change
+    fn position(&self) -> Vector2f {
+        (self.bounds.left, self.bounds.top).into()
+    }
+
+    fn set_position(&mut self, position: Vector2f) {
+        let old_pos = self.position();
+        let offset = Vector2f::new(position.x - old_pos.x, position.y - old_pos.y);
+
+        self.bounds.left = position.x;
+        self.bounds.top = position.y;
+
+        for i in 0..GRID_SIZE {
+            for j in 0..GRID_SIZE {
+                self.grid[i][j].origin.x += offset.x;
+                self.grid[i][j].origin.y += offset.y;
+
+                for point in self.grid[i][j].points.iter_mut() {
+                    point.x += offset.x;
+                    point.y += offset.y;
+                }
+            }
+        }
     }
 }
 
@@ -208,7 +228,8 @@ impl Drawable for Game {
         } else {
             cover.set_fill_color(Color::rgba(0, 0, 0, 200));
         }
-        cover.set_bounds(self.bounds);
+        cover.set_size((self.bounds.width, self.bounds.height));
+        cover.set_position((self.bounds.left, self.bounds.top));
         cover.set_outline_color(Color::BLACK);
         cover.set_outline_thickness(2.0);
         target.draw(&cover);
