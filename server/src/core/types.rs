@@ -5,13 +5,16 @@ use std::{
     thread::JoinHandle,
 };
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
-use super::request_handlers::Request;
+use super::{request_handlers::Request, game::GameState};
 
 pub type BoolMutex = Arc<Mutex<bool>>;
 
 pub type HandleVec = RefCell<Vec<JoinHandle<()>>>;
+
+pub type RequestQueue = Arc<(Mutex<Vec<RequestQueueItem>>, Condvar)>;
+pub type RequestQueueItem = Box<dyn Request + Send>;
 
 #[derive(PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum UserType {
@@ -20,6 +23,7 @@ pub enum UserType {
     Spectator,
 }
 
+#[derive(Clone)]
 pub struct UserInfo {
     pub id: u32,
     pub user_type: UserType,
@@ -61,13 +65,14 @@ pub struct LobbyAddr {
 pub struct LobbyState {
     pub name: String,
     pub users: Vec<UserInfoShort>,
+    pub game: Option<GameState>,
 }
 
 #[derive(Serialize)]
 pub struct LobbyStateShort {
     pub name: String,
     pub users: u32,
+    pub game_going: bool,
 }
 
-pub type RequestQueue = Arc<(Mutex<Vec<RequestQueueItem>>, Condvar)>;
-pub type RequestQueueItem = Box<dyn Request + Send>;
+pub type Game = Arc<Mutex<Option<GameState>>>;

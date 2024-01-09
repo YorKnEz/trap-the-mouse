@@ -17,6 +17,8 @@ pub enum NetworkEvent {
     PlayerUpdated(PlayerUpdatedEvent),
     PlayerJoined(PlayerJoinedEvent),
     PlayerLeft(PlayerLeftEvent),
+    GameStarted(GameStartedEvent),
+    GameUpdated(GameUpdatedEvent),
     LobbyClosing(LobbyClosingEvent),
 }
 
@@ -46,4 +48,5 @@ pub enum UIEvent {
     // LobbyCardNoClicked(LobbyCardEventData),
     PlayerCardClicked(PlayerCardEventData),
     // PlayerCardNoClicked(PlayerCardEventData),
+    GameMove(GameMoveEventData),
 }

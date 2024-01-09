@@ -4,7 +4,7 @@ mod gui;
 mod types;
 
 use commands::{check_error, connect_cmd, disconnect_cmd};
-use gui::window::{GameWindow, SettingsWindow, CreateLobbyWindow};
+use gui::window::{CreateLobbyWindow, GameWindow, SettingsWindow};
 use types::{GameState, GameStateShared, RcCell};
 
 use std::cell::RefCell;
@@ -15,7 +15,7 @@ const SERVER_ADDR: SocketAddr =
     SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20000);
 
 use events::{EventLoop, UIEvent, Window};
-use sfml::graphics::{Color, RcFont, RenderTarget, RenderWindow};
+use sfml::graphics::{Color, RcFont, RenderTarget, RenderWindow, Sprite, Texture, Transformable};
 use sfml::window::{Style, VideoMode};
 
 use crate::events::{Event, NetworkEvent};
@@ -53,6 +53,10 @@ fn main() {
             .into(),
     );
 
+    let bg_texture = Texture::from_file("./client_gui/assets/bg.png").unwrap();
+    let mut bg = Sprite::with_texture(&bg_texture);
+    bg.set_position((0.0, 0.0));
+
     let event_loop = EventLoop::new().unwrap();
 
     let font =
@@ -64,7 +68,7 @@ fn main() {
         Window::Start,
         &font,
         event_loop.sender.clone(),
-        Rc::clone(&game_state),
+        // Rc::clone(&game_state),
     );
     let create_lobby_window = CreateLobbyWindow::new(
         Window::CreateLobby,
@@ -100,12 +104,6 @@ fn main() {
     let current_window: RcCell<&dyn WindowState> = rc_cell!(&start_window);
 
     {
-        if let Err(e) = current_window.borrow().enter() {
-            panic!("cannot start game: {e:?}");
-        }
-    }
-
-    {
         let mut game_state = game_state.borrow_mut();
 
         match connect_cmd(game_state.name.clone(), event_loop.addr) {
@@ -114,6 +112,12 @@ fn main() {
                 check_error(e);
                 panic!("cannot connect to server");
             }
+        }
+    }
+
+    {
+        if let Err(e) = current_window.borrow().enter() {
+            panic!("cannot start game: {e:?}");
         }
     }
 
@@ -129,27 +133,34 @@ fn main() {
                         3 => switch_state(current_window.clone(), &settings_window),
                         4 => window.close(),
                         _ => {}
-                    }
+                    },
                     Window::CreateLobby => match event_data.id {
                         1 => switch_state(current_window.clone(), &game_window),
                         2 => switch_state(current_window.clone(), &start_window),
                         _ => {}
-                    }
+                    },
                     Window::Lobbies => match event_data.id {
                         0 => println!("search"),
                         2 => switch_state(current_window.clone(), &game_window),
                         3 => switch_state(current_window.clone(), &start_window),
                         _ => {}
-                    }
+                    },
                     Window::Settings => match event_data.id {
                         2 => switch_state(current_window.clone(), &start_window),
                         _ => {}
-                    }
+                    },
                     Window::Game => match event_data.id {
-                        2 => switch_state(current_window.clone(), &start_window),
+                        0 => println!("start game"),
+                        1 => println!("make host"),
+                        2 => println!("close lobby"),
+                        3 => println!("spectate"),
+                        4 => println!("play"),
+                        5 => switch_state(current_window.clone(), &start_window),
+                        6 => println!("scrollable"),
+                        7 => println!("game"),
                         _ => {}
-                    }
-                }
+                    },
+                },
                 Event::Network(NetworkEvent::LobbyClosing(_)) => {
                     switch_state(current_window.clone(), &lobbies_window);
                 }
@@ -168,16 +179,25 @@ fn main() {
 
         window.clear(Color::rgb(57, 11, 74));
 
+        window.draw(&bg);
         window.draw(current_window.borrow().as_drawable());
 
         window.display();
     }
 
-    let mut game_state = game_state.borrow_mut();
+    {
+        if let Err(e) = current_window.borrow().exit() {
+            panic!("cannot disconnect game: {e:?}");
+        }
+    }
 
-    match disconnect_cmd(&game_state.id) {
-        Ok(_) => game_state.id = 0,
-        Err(e) => check_error(e),
+    {
+        let mut game_state = game_state.borrow_mut();
+
+        match disconnect_cmd(&game_state.id) {
+            Ok(_) => game_state.id = 0,
+            Err(e) => check_error(e),
+        }
     }
 }
 

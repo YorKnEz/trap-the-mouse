@@ -5,7 +5,7 @@ use network::SendRecv;
 
 use crate::core::{
     request_handlers::error_check,
-    types::{LobbyName, UsersVec, LobbyStateShort},
+    types::{Game, LobbyName, LobbyStateShort, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -14,14 +14,22 @@ pub struct GetLobbyStateRequest {
     stream: TcpStream,
     name: LobbyName,
     users: UsersVec,
+    game: Game,
 }
 
 impl GetLobbyStateRequest {
-    pub fn new(stream: TcpStream, _: (), name: LobbyName, users: UsersVec) -> GetLobbyStateRequest {
+    pub fn new(
+        stream: TcpStream,
+        _: (),
+        name: LobbyName,
+        users: UsersVec,
+        game: Game,
+    ) -> GetLobbyStateRequest {
         GetLobbyStateRequest {
             stream,
             name,
             users,
+            game,
         }
     }
 
@@ -29,6 +37,7 @@ impl GetLobbyStateRequest {
         Ok(LobbyStateShort {
             name: { self.name.lock().unwrap().clone() },
             users: { self.users.lock().unwrap().len() as u32 },
+            game_going: { self.game.lock().unwrap().is_some() },
         })
     }
 }

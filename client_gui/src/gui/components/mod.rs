@@ -7,6 +7,7 @@ mod scrollable;
 mod scrollbar;
 mod events;
 mod fixed;
+pub mod game;
 
 pub use button::Button;
 pub use clicker::Clicker;

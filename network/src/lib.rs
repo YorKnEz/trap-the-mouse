@@ -42,11 +42,15 @@ pub enum Type {
     BecomeRole,
     SendMessage,
     ChangedName,
+    StartGame,
+    MakeMove,
     // client notifications
-    LobbyClosing,
     PlayerJoined,
     PlayerLeft,
     PlayerUpdated,
+    GameStarted,
+    GameUpdated,
+    LobbyClosing,
     // responses
     Success,
     Error,

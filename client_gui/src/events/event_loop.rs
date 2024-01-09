@@ -13,7 +13,7 @@ use crate::types::{BoolMutex, EventQueue, EventQueueItem};
 
 use super::{
     Event, LobbyClosingEvent, NetworkEvent, PlayerJoinedEvent, PlayerLeftEvent,
-    UIEvent, PlayerUpdatedEvent,
+    UIEvent, PlayerUpdatedEvent, GameStartedEvent, GameUpdatedEvent,
 };
 
 pub struct EventLoop {
@@ -118,6 +118,14 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
                     },
                     Type::PlayerUpdated => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::PlayerUpdated(PlayerUpdatedEvent::new(buf))),
+                        Err(_) => None,
+                    },
+                    Type::GameStarted => match bincode::deserialize(&buf) {
+                        Ok(buf) => Some(NetworkEvent::GameStarted(GameStartedEvent::new(buf))),
+                        Err(_) => None,
+                    },
+                    Type::GameUpdated => match bincode::deserialize(&buf) {
+                        Ok(buf) => Some(NetworkEvent::GameUpdated(GameUpdatedEvent::new(buf))),
                         Err(_) => None,
                     },
                     Type::LobbyClosing => match bincode::deserialize(&buf) {

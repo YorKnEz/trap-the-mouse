@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{LobbyName, LobbyState, UserInfo, UserInfoShort, UserType, UsersVec},
+    types::{LobbyName, LobbyState, UserInfo, UserInfoShort, UserType, UsersVec, Game},
 };
 
 use super::{error::ServerError, Request};
@@ -18,6 +18,7 @@ pub struct JoinLobbyRequest {
     user_id: u32,
     lobby_name: LobbyName,
     users: UsersVec,
+    game: Game,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -27,6 +28,7 @@ impl JoinLobbyRequest {
         user_id: u32,
         lobby_name: LobbyName,
         users: UsersVec,
+        game: Game,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> JoinLobbyRequest {
         JoinLobbyRequest {
@@ -34,6 +36,7 @@ impl JoinLobbyRequest {
             user_id,
             lobby_name,
             users,
+            game,
             db_pool,
         }
     }

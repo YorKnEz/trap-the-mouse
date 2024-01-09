@@ -4,10 +4,10 @@ use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 
 use super::request_handlers::{
-    BecomeRoleRequest, CloseLobbyRequest, GetLobbyStateRequest, InvalidRequest, JoinLobbyRequest,
-    LeaveLobbyRequest, MakeHostRequest, PingRequest,
+    BecomeRoleRequest, ChangedNameRequest, CloseLobbyRequest, GetLobbyStateRequest, InvalidRequest,
+    JoinLobbyRequest, LeaveLobbyRequest, MakeHostRequest, PingRequest, StartGameRequest, MakeMoveRequest,
 };
-use super::types::{LobbyId, UsersVec, LobbyName};
+use super::types::{LobbyId, LobbyName, UsersVec, Game};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
 use network::{request, SendRecv, Type};
 
@@ -16,6 +16,7 @@ pub struct Lobby {
     pub id: LobbyId,
     pub name: LobbyName,
     pub users: UsersVec,
+    pub game: Game,
 }
 
 impl RequestHandler for Lobby {
@@ -38,6 +39,7 @@ impl RequestHandler for Lobby {
                     buf,
                     Arc::clone(&self.name),
                     Arc::clone(&self.users),
+                    Arc::clone(&self.game),
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
             },
@@ -47,6 +49,7 @@ impl RequestHandler for Lobby {
                     buf,
                     Arc::clone(&self.name),
                     Arc::clone(&self.users),
+                    Arc::clone(&self.game),
                     self.server.db_pool.clone(),
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
@@ -98,6 +101,26 @@ impl RequestHandler for Lobby {
                 )),
                 Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
             },
+            Type::StartGame => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(StartGameRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
+                    Arc::clone(&self.game),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::MakeMove => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(MakeMoveRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
+                    Arc::clone(&self.game),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
             _ => Box::new(InvalidRequest::new(stream, "invalid request")),
         })
     }
@@ -112,6 +135,7 @@ impl Lobby {
             id: Arc::new(Mutex::new(id)),
             name: Arc::new(Mutex::new(name)),
             users: Arc::new(Mutex::new(vec![])),
+            game: Arc::new(Mutex::new(None)),
         })
     }
 

@@ -63,6 +63,7 @@ pub struct Lobby {
     pub addr: SocketAddr,
     pub name: String,
     pub players: Vec<Player>,
+    pub user_type: UserType, // current user's type
 }
 
 impl Display for Lobby {
@@ -99,6 +100,8 @@ pub struct GameState {
     pub selected_lobby: Option<LobbyShort>,
 }
 pub type GameStateShared = RcCell<GameState>;
+
+pub const GRID_SIZE: usize = 11;
 
 pub type RcCell<T> = Rc<RefCell<T>>;
 
