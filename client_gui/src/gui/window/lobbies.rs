@@ -41,7 +41,7 @@ impl<'a> LobbiesWindow<'a> {
         state: GameStateShared,
     ) -> LobbiesWindow<'a> {
         let x = (WINDOW_SIZE - (BUTTON_HEIGHT + PADDING + BUTTON_WIDTH + PADDING + BUTTON_WIDTH))
-            / 2f32;
+            / 2.0;
 
         LobbiesWindow {
             window,
@@ -52,7 +52,7 @@ impl<'a> LobbiesWindow<'a> {
                 0,
                 window,
                 x,
-                40f32 + 600f32 + 10f32,
+                40.0 + 600.0 + 10.0,
                 BUTTON_HEIGHT,
                 BUTTON_HEIGHT,
                 "S",
@@ -63,7 +63,7 @@ impl<'a> LobbiesWindow<'a> {
                 2,
                 window,
                 x + PADDING + BUTTON_HEIGHT,
-                40f32 + 600f32 + 10f32,
+                40.0 + 600.0 + 10.0,
                 BUTTON_WIDTH,
                 BUTTON_HEIGHT,
                 "Join Lobby",
@@ -74,7 +74,7 @@ impl<'a> LobbiesWindow<'a> {
                 3,
                 window,
                 x + PADDING + BUTTON_HEIGHT + PADDING + BUTTON_WIDTH,
-                40f32 + 600f32 + 10f32,
+                40.0 + 600.0 + 10.0,
                 BUTTON_WIDTH,
                 BUTTON_HEIGHT,
                 "Back",
@@ -85,10 +85,10 @@ impl<'a> LobbiesWindow<'a> {
             lobbies_scrollable: rc_cell!(Scrollable::new(
                 4,
                 window,
-                WINDOW_SIZE / 2f32 - 300f32,
-                40f32,
-                600f32,
-                600f32,
+                WINDOW_SIZE / 2.0 - 300.0,
+                40.0,
+                600.0,
+                600.0,
             )),
             font,
             sender,
@@ -150,7 +150,7 @@ impl<'a> LobbiesWindow<'a> {
 
         for lobby in new_lobbies {
             // skip old lobbies
-            if lobbies.iter().position(|l| l.id == lobby.id).is_some() {
+            if lobbies.iter().any(|l| l.id == lobby.id) {
                 continue;
             }
 
@@ -174,8 +174,8 @@ impl<'a> LobbiesWindow<'a> {
                 lobby_state,
                 bounds.width
                     - Scrollable::<LobbyCard>::SCROLLBAR_WIDTH
-                    - 2f32 * Scrollable::<LobbyCard>::PADDING,
-                60f32,
+                    - 2.0 * Scrollable::<LobbyCard>::PADDING,
+                60.0,
                 self.font,
                 self.sender.clone(),
             ));
@@ -203,7 +203,7 @@ impl<'a> WindowState for LobbiesWindow<'a> {
 impl<'a> EventHandler for LobbiesWindow<'a> {
     fn handle_event(&self, e: Event) {
         match e.clone() {
-            Event::SFML(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
+            Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {
                     self.clicker.click(x, y);
                 }
@@ -221,7 +221,7 @@ impl<'a> EventHandler for LobbiesWindow<'a> {
             Event::UI(UIEvent::LobbyCardClicked(event_data))
                 if event_data.window == self.window =>
             {
-                (*self.state.borrow_mut()).selected_lobby = Some(event_data.data);
+                self.state.borrow_mut().selected_lobby = Some(event_data.data);
             }
             // Event::UI(UIEvent::LobbyCardNoClicked(event_data))
             //     if event_data.window == self.window =>

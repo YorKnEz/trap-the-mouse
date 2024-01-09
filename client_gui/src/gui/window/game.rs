@@ -3,7 +3,8 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc};
 use anyhow::anyhow;
 use sfml::{
     graphics::{Drawable, RcFont, RcText, Transformable},
-    window::mouse, system::Vector2f,
+    system::Vector2f,
+    window::mouse,
 };
 
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
     },
     rc_cell,
     types::{GameStateShared, Lobby, Player, RcCell, UserType},
-    BUTTON_HEIGHT, BUTTON_WIDTH, PADDING, WINDOW_SIZE,
+    BUTTON_HEIGHT, PADDING, WINDOW_SIZE,
 };
 
 use super::WindowState;
@@ -47,7 +48,7 @@ impl<'a> GameWindow<'a> {
         sender: mpsc::Sender<UIEvent>,
         state: GameStateShared,
     ) -> GameWindow<'a> {
-        let texts = vec![
+        let texts = [
             "Start game",
             "Make host",
             "Close lobby",
@@ -57,15 +58,15 @@ impl<'a> GameWindow<'a> {
         ];
         let mut buttons = vec![];
 
-        for i in 0..6 {
+        for (i, text) in texts.iter().enumerate() {
             buttons.push(rc_cell!(Button::new(
                 i as u32,
                 window,
                 0.0,
                 0.0,
-                BUTTON_WIDTH,
+                WINDOW_SIZE - (GameWindow::GAME_WIDTH + 3.0 * PADDING),
                 BUTTON_HEIGHT,
-                texts[i],
+                text,
                 font,
                 sender.clone(),
             )));
@@ -122,13 +123,13 @@ impl<'a> GameWindow<'a> {
         let players = &mut state.lobby.as_mut().unwrap().players;
 
         let card = rc_cell!(PlayerCard::new(
-            player.id as u32,
+            player.id,
             self.window,
             player.clone(),
             bounds.width
                 - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
-                - 2f32 * Scrollable::<PlayerCard>::PADDING,
-            60f32,
+                - 2.0 * Scrollable::<PlayerCard>::PADDING,
+            60.0,
             self.font,
             self.sender.clone(),
         ));
@@ -231,19 +232,21 @@ impl<'a> WindowState for GameWindow<'a> {
         self.set_game_state("Waiting for host to start a new game");
 
         let mut players_scrollable = self.players_scrollable.borrow_mut();
+        players_scrollable.clear();
+
         let bounds = players_scrollable.bounds();
 
         let players = &lobby.players;
 
         for player in players {
             let card = rc_cell!(PlayerCard::new(
-                player.id as u32,
+                player.id,
                 self.window,
                 player.clone(),
                 bounds.width
                     - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
-                    - 2f32 * Scrollable::<PlayerCard>::PADDING,
-                60f32,
+                    - 2.0 * Scrollable::<PlayerCard>::PADDING,
+                60.0,
                 self.font,
                 self.sender.clone(),
             ));
@@ -274,7 +277,7 @@ impl<'a> WindowState for GameWindow<'a> {
 impl<'a> EventHandler for GameWindow<'a> {
     fn handle_event(&self, e: Event) {
         match e {
-            Event::SFML(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
+            Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {
                     self.clicker.click(x, y);
                 }
@@ -353,7 +356,7 @@ impl<'a> EventHandler for GameWindow<'a> {
                 self.clicker.add_clickable(self.game.clone());
             }
             Event::Network(NetworkEvent::GameUpdated(e)) => {
-                let mut host = String::new(); 
+                let mut host = String::new();
                 let mut player = String::new();
 
                 self.state

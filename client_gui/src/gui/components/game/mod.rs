@@ -64,8 +64,8 @@ impl Game {
 
         let mut grid = [[Default::default(); GRID_SIZE]; GRID_SIZE];
 
-        for i in 0..GRID_SIZE {
-            for j in 0..GRID_SIZE {
+        for (i, line) in grid.iter_mut().enumerate() {
+            for (j, item) in line.iter_mut().enumerate() {
                 let origin = Vector2f::new(
                     bounds.left
                         + tile_width
@@ -74,7 +74,7 @@ impl Game {
                     bounds.top + 2.0 * tile_width + i as f32 * (1.5 * tile_width),
                 );
 
-                grid[i][j] = Tile::new(origin, &off);
+                *item = Tile::new(origin, &off);
             }
         }
 
@@ -96,9 +96,9 @@ impl Game {
         self.began = true;
         self.player_pos = (state.devil_pos.0 as usize, state.devil_pos.1 as usize);
 
-        for i in 0..GRID_SIZE {
-            for j in 0..GRID_SIZE {
-                self.grid[i][j].set_blocked(state.grid[i][j]);
+        for (i, line) in self.grid.iter_mut().enumerate() {
+            for (j, item) in line.iter_mut().enumerate() {
+                item.set_blocked(state.grid[i][j]);
             }
         }
     }
@@ -107,9 +107,9 @@ impl Game {
         self.began = false;
         self.player_pos = (GRID_SIZE / 2, GRID_SIZE / 2);
 
-        for i in 0..GRID_SIZE {
-            for j in 0..GRID_SIZE {
-                self.grid[i][j].set_blocked(false);
+        for line in self.grid.iter_mut() {
+            for item in line.iter_mut() {
+                item.set_blocked(false);
             }
         }
     }
@@ -117,7 +117,7 @@ impl Game {
     pub fn update(&mut self, state: GameUpdatedEvent) {
         let user_move = (state.user_move.0 as usize, state.user_move.1 as usize);
         // devil move
-        if state.turn == false {
+        if !state.turn {
             self.player_pos = (user_move.0, user_move.1);
         }
         // angel move
@@ -132,9 +132,9 @@ impl Game {
 
     pub fn click(&self, x: u32, y: u32) {
         println!("{x} {y}");
-        for i in 0..GRID_SIZE {
-            for j in 0..GRID_SIZE {
-                if self.grid[i][j].inside(x, y) {
+        for (i, line) in self.grid.iter().enumerate() {
+            for (j, item) in line.iter().enumerate() {
+                if item.inside(x, y) {
                     println!("{i} {j}");
                     if let Err(e) = self.sender.send(UIEvent::GameMove(GameMoveEventData {
                         x: i as i32,

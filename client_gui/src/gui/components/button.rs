@@ -20,12 +20,11 @@ pub struct Button<'a> {
 }
 
 impl<'a> Button<'a> {
-    const BORDER: f32 = 4f32;
+    const BORDER: f32 = 4.0;
 
     pub fn new(
         id: u32,
         window: Window,
-
         left: f32,
         top: f32,
         width: f32,
@@ -43,8 +42,8 @@ impl<'a> Button<'a> {
 
         let mut bg = RectangleShape::new();
         bg.set_size(Vector2f::new(
-            width as f32 - 2f32 * Button::BORDER,
-            height as f32 - 2f32 * Button::BORDER,
+            width - 2.0 * Button::BORDER,
+            height - 2.0 * Button::BORDER,
         ));
         bg.set_position((left + Button::BORDER, top + Button::BORDER));
         bg.set_fill_color(Color::rgb(53, 232, 101));
@@ -58,8 +57,8 @@ impl<'a> Button<'a> {
         let text_height = text.character_size() as f32;
 
         text.set_position((
-            left + width / 2f32 - text_width / 2f32,
-            top + height / 2f32 - text_height / 2f32,
+            left + width / 2.0 - text_width / 2.0,
+            top + height / 2.0 - text_height / 2.0,
         ));
 
         Button {
@@ -94,7 +93,8 @@ impl<'a> Fixed for Button<'a> {
         self.bounds.top = position.y;
 
         old_pos = self.bg.position();
-        self.bg.set_position(Vector2f::new(old_pos.x + offset.x, old_pos.y + offset.y));
+        self.bg
+            .set_position(Vector2f::new(old_pos.x + offset.x, old_pos.y + offset.y));
 
         old_pos = self.text.position();
         self.text

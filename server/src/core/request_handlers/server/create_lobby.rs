@@ -63,7 +63,7 @@ impl CreateLobbyRequest {
         };
 
         // auto assign a name if none is provided
-        let lobby_name = if self.name.len() > 0 {
+        let lobby_name = if !self.name.is_empty() {
             self.name.clone()
         } else {
             format!("Lobby {id}")

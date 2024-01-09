@@ -25,11 +25,12 @@ impl Tile {
     pub fn inside(&self, x: u32, y: u32) -> bool {
         let p = Vector2f::new(x as f32, y as f32);
 
-        !self.under_slope(p, self.points[5], self.points[0]) &&
-        !self.under_slope(p, self.points[0], self.points[1]) &&
-        self.under_slope(p, self.points[2], self.points[3]) &&
-        self.under_slope(p, self.points[3], self.points[4]) &&
-        self.points[5].x <= p.x && p.x <= self.points[1].x
+        !self.under_slope(p, self.points[5], self.points[0])
+            && !self.under_slope(p, self.points[0], self.points[1])
+            && self.under_slope(p, self.points[2], self.points[3])
+            && self.under_slope(p, self.points[3], self.points[4])
+            && self.points[5].x <= p.x
+            && p.x <= self.points[1].x
     }
 
     fn under_slope(&self, p: Vector2f, a: Vector2f, b: Vector2f) -> bool {
@@ -46,5 +47,7 @@ impl Tile {
 
     // pub fn blocked(&self) -> bool { self.blocked }
 
-    pub fn set_blocked(&mut self, value: bool) { self.blocked = value; }
+    pub fn set_blocked(&mut self, value: bool) {
+        self.blocked = value;
+    }
 }

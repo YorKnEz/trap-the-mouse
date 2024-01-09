@@ -12,8 +12,8 @@ use network::{SendRecv, Type};
 use crate::types::{BoolMutex, EventQueue, EventQueueItem};
 
 use super::{
-    Event, LobbyClosingEvent, NetworkEvent, PlayerJoinedEvent, PlayerLeftEvent,
-    UIEvent, PlayerUpdatedEvent, GameStartedEvent, GameUpdatedEvent,
+    Event, GameStartedEvent, GameUpdatedEvent, LobbyClosingEvent, NetworkEvent, PlayerJoinedEvent,
+    PlayerLeftEvent, PlayerUpdatedEvent, UIEvent,
 };
 
 pub struct EventLoop {
@@ -139,11 +139,7 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
                     println!("couldn't send: {e:?}");
                 }
 
-                if let Some(ev) = ev {
-                    Some(Event::Network(ev))
-                } else {
-                    None
-                }
+                ev.map(Event::Network)
             }
             Err(e) => {
                 if e.kind() == io::ErrorKind::WouldBlock {
@@ -177,12 +173,9 @@ pub fn ui_event_loop_thread(
             }
         }
 
-        match receiver.try_recv() {
-            Ok(ev) => {
-                let mut events = events.lock().unwrap();
-                events.push(Event::UI(ev));
-            }
-            Err(_) => {}
+        if let Ok(ev) = receiver.try_recv() {
+            let mut events = events.lock().unwrap();
+            events.push(Event::UI(ev));
         }
     }
 }

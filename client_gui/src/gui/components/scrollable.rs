@@ -28,8 +28,8 @@ impl<'a, T> Scrollable<'a, T>
 where
     T: Fixed,
 {
-    pub const PADDING: f32 = 10f32;
-    pub const SCROLLBAR_WIDTH: f32 = 20f32;
+    pub const PADDING: f32 = 10.0;
+    pub const SCROLLBAR_WIDTH: f32 = 20.0;
 
     pub fn new(
         id: u32,
@@ -51,7 +51,7 @@ where
             top,
             Scrollable::<T>::SCROLLBAR_WIDTH,
             height,
-            0f32,
+            0.0,
         );
 
         let mut bg = RectangleShape::new();
@@ -86,7 +86,7 @@ where
                 ));
             } else {
                 self.scrollbar
-                    .resize_with(pos.height + 2f32 * Scrollable::<T>::PADDING);
+                    .resize_with(pos.height + 2.0 * Scrollable::<T>::PADDING);
                 item_inner.set_position(Vector2f::new(
                     self.bounds.left + Scrollable::<T>::PADDING,
                     self.bounds.top + Scrollable::<T>::PADDING,
@@ -104,7 +104,7 @@ where
         let rem_bounds = rem_item.borrow().bounds();
         let rem = rem_bounds.height + Scrollable::<T>::PADDING;
 
-        if self.list.len() == 0 {
+        if self.list.is_empty() {
             self.scrollbar
                 .resize_with(-(rem + Scrollable::<T>::PADDING));
             return rem_item;
@@ -150,13 +150,13 @@ where
                     let shift = (self.bounds.top + self.bounds.height
                         - Scrollable::<T>::PADDING
                         - (last.top + shift + last.height))
-                        .min((self.bounds.top + Scrollable::<T>::PADDING - first.top).max(0f32));
+                        .min((self.bounds.top + Scrollable::<T>::PADDING - first.top).max(0.0));
 
                     println!("second");
                     (0..self.list.len(), shift, shift)
                 } else {
                     println!("third");
-                    (index..self.list.len(), shift, 0f32)
+                    (index..self.list.len(), shift, 0.0)
                 }
             };
 
@@ -209,13 +209,13 @@ where
 {
     fn handle_event(&mut self, e: Event) {
         match e.clone() {
-            Event::SFML(sfml::window::Event::MouseWheelScrolled {
+            Event::Sfml(sfml::window::Event::MouseWheelScrolled {
                 wheel: _,
                 delta,
                 x: _,
                 y: _,
-            }) => self.scroll_by(delta, 100f32),
-            Event::SFML(sfml::window::Event::KeyPressed {
+            }) => self.scroll_by(delta, 100.0),
+            Event::Sfml(sfml::window::Event::KeyPressed {
                 code,
                 scan: _,
                 alt: _,
@@ -223,8 +223,8 @@ where
                 shift: _,
                 system: _,
             }) => match code {
-                Key::Up => self.scroll_to(0f32),
-                Key::Down => self.scroll_to(9999f32),
+                Key::Up => self.scroll_to(0.0),
+                Key::Down => self.scroll_to(9999.0),
                 _ => {}
             },
             _ => {}
@@ -344,7 +344,6 @@ where
         _target: &mut dyn RenderTarget,
         _: &sfml::graphics::RenderStates<'texture, 'shader, 'shader_texture>,
     ) {
-        // TODO: find a way to not create a new sprite and texture on each draw
         let bounds = self.bounds();
         let mut target = loop {
             let target = RenderTexture::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32);

@@ -8,7 +8,7 @@ use sfml::{
 use crate::{
     commands::{change_name_cmd, check_error},
     events::{Event, UIEvent, Window},
-    gui::components::{Button, Clicker, EventHandler, Input, EventHandlerMut},
+    gui::components::{Button, Clicker, EventHandler, EventHandlerMut, Input},
     rc_cell,
     types::{GameStateShared, RcCell},
     BUTTON_HEIGHT, BUTTON_WIDTH, DEFAULT_NAME, PADDING, WINDOW_SIZE,
@@ -37,13 +37,13 @@ impl<'a> SettingsWindow<'a> {
         sender: mpsc::Sender<UIEvent>,
         state: GameStateShared,
     ) -> SettingsWindow<'a> {
-        let x = WINDOW_SIZE / 2f32 - BUTTON_WIDTH / 2f32;
-        let y = WINDOW_SIZE / 2f32 - BUTTON_HEIGHT;
+        let x = WINDOW_SIZE / 2.0 - BUTTON_WIDTH / 2.0;
+        let y = WINDOW_SIZE / 2.0 - BUTTON_HEIGHT;
         let offset = BUTTON_HEIGHT + PADDING;
 
         let mut buttons = vec![];
 
-        let texts = vec!["Save", "Back"];
+        let texts = ["Save", "Back"];
 
         for i in 1..=2 {
             buttons.push(rc_cell!(Button::new(
@@ -69,9 +69,9 @@ impl<'a> SettingsWindow<'a> {
                 0,
                 window,
                 x,
-                y + 0f32 * offset,
+                y + 0.0 * offset,
                 BUTTON_WIDTH,
-                20f32,
+                20.0,
                 font,
                 "",
                 "Your name",
@@ -118,7 +118,7 @@ impl<'a> EventHandler for SettingsWindow<'a> {
         self.input.borrow_mut().handle_event(e.clone());
 
         match e {
-            Event::SFML(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
+            Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {
                     self.clicker.click(x, y);
                 }
@@ -128,8 +128,8 @@ impl<'a> EventHandler for SettingsWindow<'a> {
                 settings.name = value.clone();
             }
             Event::UI(UIEvent::ButtonClicked(event_data)) if event_data.window == self.window => {
-                match event_data.id {
-                    1 => 'save: {
+                if event_data.id == 1 {
+                    'save: {
                         let mut state = self.state.borrow_mut();
                         let settings = self.settings.borrow();
                         match change_name_cmd(&state.id, settings.name.clone(), &state.lobby) {
@@ -142,7 +142,6 @@ impl<'a> EventHandler for SettingsWindow<'a> {
 
                         state.name = settings.name.clone();
                     }
-                    _ => {}
                 }
             }
             _ => {}

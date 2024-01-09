@@ -6,10 +6,8 @@ use crate::{
 };
 
 pub fn start_game_cmd(user_id: &UserId, active_lobby: &Option<Lobby>) -> Result<(), CommandError> {
-    if let None = active_lobby {
-        return Err(CommandError::CommandError {
-            message: "you are not connected to a lobby".to_string(),
-        });
+    if active_lobby.is_none() {
+        return Err(CommandError::NotConnected);
     }
 
     request(

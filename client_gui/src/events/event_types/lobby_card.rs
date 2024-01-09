@@ -1,4 +1,4 @@
-use crate::{types::LobbyShort, events::Window};
+use crate::{events::Window, types::LobbyShort};
 
 #[derive(Clone, Debug)]
 pub struct LobbyCardEventData {

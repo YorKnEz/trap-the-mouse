@@ -31,16 +31,16 @@ pub struct ActiveInput<'a> {
 }
 
 impl<'a> ActiveInput<'a> {
-    const TOP_PADDING: f32 = 10f32;
+    const TOP_PADDING: f32 = 10.0;
     const MAX_LEN: usize = 256;
-    const BORDER: f32 = 2f32;
+    const BORDER: f32 = 2.0;
 
     pub fn from(from: InactiveInput<'a>) -> ActiveInput<'a> {
         let cursor_pos = from.buf.len();
         let mut cursor = RectangleShape::new();
         cursor.set_size((
-            1f32,
-            from.text.character_size() as f32 + 2f32 * ActiveInput::BORDER,
+            1.0,
+            from.text.character_size() as f32 + 2.0 * ActiveInput::BORDER,
         ));
         cursor.set_position((
             from.text.find_character_pos(cursor_pos).x,
@@ -121,7 +121,7 @@ impl<'a> ActiveInput<'a> {
     fn new_range(&mut self) {
         self.range = (0, self.buf.len());
 
-        if self.buf.len() > 0 {
+        if !self.buf.is_empty() {
             let left = self.side_bg[0].global_bounds();
             let limit = (left.left + left.width, self.side_bg[1].global_bounds().left);
 
@@ -148,7 +148,7 @@ impl InputState for ActiveInput<'static> {
             Event::UI(UIEvent::InputNoClicked(_)) => {
                 return Box::new(InactiveInput::from(*self));
             }
-            Event::SFML(sfml::window::Event::KeyPressed {
+            Event::Sfml(sfml::window::Event::KeyPressed {
                 code,
                 scan: _,
                 alt: _,
@@ -188,7 +188,7 @@ impl InputState for ActiveInput<'static> {
                 }
                 _ => {}
             },
-            Event::SFML(sfml::window::Event::TextEntered { unicode }) => {
+            Event::Sfml(sfml::window::Event::TextEntered { unicode }) => {
                 if !unicode.is_alphanumeric() || self.buf.len() >= ActiveInput::MAX_LEN {
                     return self;
                 }
@@ -211,7 +211,7 @@ impl InputState for ActiveInput<'static> {
             _ => {}
         }
 
-        return self;
+        self
     }
 
     fn get_value(&self) -> String {
@@ -223,7 +223,7 @@ impl InputState for ActiveInput<'static> {
         while self.cursor_pos > 0 {
             self.move_cursor_left();
         }
-        if self.buf.len() == 0 {
+        if self.buf.is_empty() {
             self.text.set_string(&self.placeholder);
             self.copy_text.set_string(&self.placeholder);
         } else {

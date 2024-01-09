@@ -12,10 +12,8 @@ pub fn join_lobby_cmd(
     lobby_addr: SocketAddr,
     active_lobby: &Option<Lobby>,
 ) -> Result<LobbyState, CommandError> {
-    if let Some(_) = active_lobby {
-        return Err(CommandError::CommandError {
-            message: "you are already in a lobby".to_string(),
-        });
+    if active_lobby.is_some() {
+        return Err(CommandError::AlreadyConnected);
     }
 
     let res: LobbyState = request(lobby_addr, Type::JoinLobby, user_id)?;

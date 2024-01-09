@@ -52,10 +52,10 @@ impl ChangeNameRequest {
             });
         }
 
-        let _ = match conn.change_user_name(self.user_id, &self.name) {
+        match conn.change_user_name(self.user_id, &self.name) {
             Ok(_) => {}
             Err(e) => return Err(ServerError::InternalRusqlite(e)),
-        };
+        }
 
         Ok(())
     }

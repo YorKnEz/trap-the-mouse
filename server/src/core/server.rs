@@ -4,8 +4,8 @@ use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 
 use super::request_handlers::{
-    ConnectRequest, CreateLobbyRequest, DisconnectRequest, GetLobbiesRequest,
-    InvalidRequest, PingRequest, ChangeNameRequest,
+    ChangeNameRequest, ConnectRequest, CreateLobbyRequest, DisconnectRequest, GetLobbiesRequest,
+    InvalidRequest, PingRequest,
 };
 use super::types::{LobbyId, LobbyVec};
 use super::{RequestHandler, RequestQueueItem, ServerCore};

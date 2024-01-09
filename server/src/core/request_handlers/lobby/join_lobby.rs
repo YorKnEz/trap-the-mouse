@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{LobbyName, LobbyState, UserInfo, UserInfoShort, UserType, UsersVec, Game},
+    types::{Game, LobbyName, LobbyState, UserInfo, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -57,14 +57,11 @@ impl JoinLobbyRequest {
 
         let mut users = self.users.lock().unwrap();
 
-        match users.iter().position(|user| user.id == self.user_id) {
-            Some(_) => {
-                return Err(ServerError::API {
-                    message: "you are already connected to this lobby".to_string(),
-                })
-            }
-            None => {}
-        };
+        if users.iter().any(|user| user.id == self.user_id) {
+            return Err(ServerError::API {
+                message: "you are already connected to this lobby".to_string(),
+            });
+        }
 
         let new_user: UserInfo = UserInfo {
             id: db_user.id,
@@ -87,8 +84,8 @@ impl JoinLobbyRequest {
 
         Ok(LobbyState {
             name: { self.lobby_name.lock().unwrap().clone() },
-            users: users.iter().map(|i| UserInfoShort::from(i)).collect(),
-            game: { self.game.lock().unwrap().clone() }
+            users: users.iter().map(UserInfoShort::from).collect(),
+            game: { self.game.lock().unwrap().clone() },
         })
     }
 }

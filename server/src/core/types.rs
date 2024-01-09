@@ -7,7 +7,7 @@ use std::{
 
 use serde_derive::{Deserialize, Serialize};
 
-use super::{request_handlers::Request, game::GameState};
+use super::{game::GameState, request_handlers::Request};
 
 pub type BoolMutex = Arc<Mutex<bool>>;
 

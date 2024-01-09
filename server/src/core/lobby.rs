@@ -5,9 +5,10 @@ use anyhow::{anyhow, Result};
 
 use super::request_handlers::{
     BecomeRoleRequest, ChangedNameRequest, CloseLobbyRequest, GetLobbyStateRequest, InvalidRequest,
-    JoinLobbyRequest, LeaveLobbyRequest, MakeHostRequest, PingRequest, StartGameRequest, MakeMoveRequest,
+    JoinLobbyRequest, LeaveLobbyRequest, MakeHostRequest, MakeMoveRequest, PingRequest,
+    StartGameRequest,
 };
-use super::types::{LobbyId, LobbyName, UsersVec, Game};
+use super::types::{Game, LobbyId, LobbyName, UsersVec};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
 use network::{request, SendRecv, Type};
 

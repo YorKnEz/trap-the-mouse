@@ -31,10 +31,10 @@ impl GameState {
 
         let mut grid = [[false; GRID_SIZE]; GRID_SIZE];
 
-        for i in 0..GRID_SIZE {
-            for j in 0..GRID_SIZE {
+        for (i, line) in grid.iter_mut().enumerate() {
+            for (j, item) in line.iter_mut().enumerate() {
                 if i as i32 != devil_pos.0 && j as i32 != devil_pos.1 {
-                    grid[i][j] = (rand::random::<u32>() % 100) < 12;
+                    *item = (rand::random::<u32>() % 100) < 12;
                 }
             }
         }
@@ -68,7 +68,7 @@ impl GameState {
             }
         }
 
-        return false;
+        false
     }
 
     pub fn devil_won(&self) -> bool {
@@ -109,6 +109,6 @@ impl GameState {
             }
         }
 
-        return res;
+        res
     }
 }

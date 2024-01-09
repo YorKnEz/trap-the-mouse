@@ -25,9 +25,9 @@ pub struct InactiveInput<'a> {
 }
 
 impl<'a> InactiveInput<'a> {
-    const LEFT_PADDING: f32 = 10f32;
-    const TOP_PADDING: f32 = 10f32;
-    const BORDER: f32 = 2f32;
+    const LEFT_PADDING: f32 = 10.0;
+    const TOP_PADDING: f32 = 10.0;
+    const BORDER: f32 = 2.0;
 
     pub fn new(
         left: f32,
@@ -43,13 +43,13 @@ impl<'a> InactiveInput<'a> {
             left,
             top,
             width,
-            height: text_height + 2f32 * InactiveInput::TOP_PADDING + 2f32 * InactiveInput::BORDER,
+            height: text_height + 2.0 * InactiveInput::TOP_PADDING + 2.0 * InactiveInput::BORDER,
         };
 
         let mut bg = RectangleShape::new();
         bg.set_size((
-            bounds.width - 2f32 * InactiveInput::BORDER,
-            bounds.height - 2f32 * InactiveInput::BORDER,
+            bounds.width - 2.0 * InactiveInput::BORDER,
+            bounds.height - 2.0 * InactiveInput::BORDER,
         ));
         bg.set_position((
             bounds.left + InactiveInput::BORDER,
@@ -63,7 +63,7 @@ impl<'a> InactiveInput<'a> {
         let mut side_bg = RectangleShape::new();
         side_bg.set_size((
             InactiveInput::LEFT_PADDING,
-            bounds.height - 2f32 * InactiveInput::BORDER,
+            bounds.height - 2.0 * InactiveInput::BORDER,
         ));
         side_bg.set_position((
             bounds.left + InactiveInput::BORDER,
@@ -77,7 +77,7 @@ impl<'a> InactiveInput<'a> {
             bounds.top + InactiveInput::BORDER,
         ));
 
-        let mut text = if value.len() == 0 {
+        let mut text = if value.is_empty() {
             RcText::new(placeholder, font, text_height as u32)
         } else {
             RcText::new(value, font, text_height as u32)
@@ -90,7 +90,7 @@ impl<'a> InactiveInput<'a> {
         text.set_fill_color(Color::rgb(45, 45, 45));
 
         let mut cursor = RectangleShape::new();
-        cursor.set_size((1f32, text_height + 2f32 * InactiveInput::BORDER));
+        cursor.set_size((1.0, text_height + 2.0 * InactiveInput::BORDER));
         cursor.set_position((
             bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
             bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,
@@ -127,7 +127,7 @@ impl<'a> InactiveInput<'a> {
     fn new_range(&mut self) {
         self.range = (0, self.buf.len());
 
-        if self.buf.len() > 0 {
+        if !self.buf.is_empty() {
             let left = self.side_bg[0].global_bounds();
             let limit = (left.left + left.width, self.side_bg[1].global_bounds().left);
 
@@ -150,14 +150,11 @@ impl<'a> InactiveInput<'a> {
 
 impl InputState for InactiveInput<'static> {
     fn handle_event(self: Box<Self>, e: Event) -> Box<dyn InputState> {
-        match e {
-            Event::UI(UIEvent::InputClicked(_)) => {
-                return Box::new(ActiveInput::from(*self));
-            }
-            _ => {}
+        if let Event::UI(UIEvent::InputClicked(_)) = e {
+            return Box::new(ActiveInput::from(*self));
         }
 
-        return self;
+        self
     }
 
     fn get_value(&self) -> String {
@@ -166,7 +163,7 @@ impl InputState for InactiveInput<'static> {
 
     fn set_value(&mut self, value: String) {
         self.buf = value;
-        if self.buf.len() == 0 {
+        if self.buf.is_empty() {
             self.text.set_string(&self.placeholder);
             self.copy_text.set_string(&self.placeholder);
         } else {
@@ -201,7 +198,8 @@ impl<'a> Fixed for InactiveInput<'a> {
         self.bounds.top = position.y;
 
         old_pos = self.bg.position();
-        self.bg.set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+        self.bg
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
 
         old_pos = self.side_bg[0].position();
         self.side_bg[0].set_position((old_pos.x + offset.x, old_pos.y + offset.y));

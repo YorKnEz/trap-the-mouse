@@ -1,8 +1,9 @@
 use std::sync::mpsc;
 
-use sfml::{graphics::{
-    Color, Drawable, FloatRect, RcFont, RcText, RectangleShape, Shape, Transformable,
-}, system::Vector2f};
+use sfml::{
+    graphics::{Color, Drawable, FloatRect, RcFont, RcText, RectangleShape, Shape, Transformable},
+    system::Vector2f,
+};
 
 use crate::{
     events::{Event, PlayerCardEventData, UIEvent, Window},
@@ -24,8 +25,8 @@ pub struct PlayerCard<'a> {
 }
 
 impl<'a> PlayerCard<'a> {
-    const LEFT_PADDING: f32 = 10f32;
-    const TOP_PADDING: f32 = 4f32;
+    const LEFT_PADDING: f32 = 10.0;
+    const TOP_PADDING: f32 = 4.0;
     const COLOR_NOT_SELECTED: Color = Color::rgb(97, 97, 97);
     const COLOR_SELECTED: Color = Color::rgb(117, 117, 117);
 
@@ -39,8 +40,8 @@ impl<'a> PlayerCard<'a> {
         sender: mpsc::Sender<UIEvent>,
     ) -> PlayerCard<'a> {
         let bounds = FloatRect {
-            left: 0f32,
-            top: 0f32,
+            left: 0.0,
+            top: 0.0,
             width,
             height,
         };
@@ -136,11 +137,7 @@ impl<'a> PlayerCard<'a> {
 }
 
 impl<'a> EventHandlerMut for PlayerCard<'a> {
-    fn handle_event(&mut self, e: Event) {
-        match e {
-            _ => {}
-        }
-    }
+    fn handle_event(&mut self, _e: Event) {}
 }
 
 impl<'a> Clickable for PlayerCard<'a> {
@@ -200,7 +197,8 @@ impl<'a> Fixed for PlayerCard<'a> {
         self.bounds.top = position.y;
 
         old_pos = self.bg.position();
-        self.bg.set_position((old_pos.x + offset.x, old_pos.y + offset.y));
+        self.bg
+            .set_position((old_pos.x + offset.x, old_pos.y + offset.y));
 
         old_pos = self.name.position();
         self.name

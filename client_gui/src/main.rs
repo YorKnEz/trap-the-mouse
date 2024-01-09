@@ -21,11 +21,11 @@ use sfml::window::{Style, VideoMode};
 use crate::events::{Event, NetworkEvent};
 use crate::gui::window::{LobbiesWindow, StartWindow, WindowState};
 
-const WINDOW_SIZE: f32 = 800f32;
+const WINDOW_SIZE: f32 = 800.0;
 const WINDOW_TITLE: &str = "Test";
-const BUTTON_WIDTH: f32 = 240f32;
-const BUTTON_HEIGHT: f32 = 60f32;
-const PADDING: f32 = 10f32;
+const BUTTON_WIDTH: f32 = 240.0;
+const BUTTON_HEIGHT: f32 = 60.0;
+const PADDING: f32 = 10.0;
 const DEFAULT_NAME: &str = "Player";
 
 fn main() {
@@ -145,10 +145,11 @@ fn main() {
                         3 => switch_state(current_window.clone(), &start_window),
                         _ => {}
                     },
-                    Window::Settings => match event_data.id {
-                        2 => switch_state(current_window.clone(), &start_window),
-                        _ => {}
-                    },
+                    Window::Settings => {
+                        if event_data.id == 2 {
+                            switch_state(current_window.clone(), &start_window);
+                        }
+                    }
                     Window::Game => match event_data.id {
                         0 => println!("start game"),
                         1 => println!("make host"),
@@ -169,11 +170,10 @@ fn main() {
         }
 
         while let Some(e) = window.poll_event() {
-            current_window.borrow().handle_event(Event::SFML(e));
+            current_window.borrow().handle_event(Event::Sfml(e));
 
-            match e {
-                sfml::window::Event::Closed => window.close(),
-                _ => {}
+            if e == sfml::window::Event::Closed {
+                window.close();
             }
         }
 

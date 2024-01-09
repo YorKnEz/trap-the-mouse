@@ -10,10 +10,8 @@ pub fn make_host_cmd(
     new_host_id: u32,
     active_lobby: &Option<Lobby>,
 ) -> Result<(), CommandError> {
-    if let None = active_lobby {
-        return Err(CommandError::CommandError {
-            message: "you are not connected to a lobby".to_string(),
-        });
+    if active_lobby.is_none() {
+        return Err(CommandError::NotConnected);
     }
 
     request(

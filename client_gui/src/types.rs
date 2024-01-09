@@ -111,4 +111,3 @@ macro_rules! rc_cell {
         Rc::new(RefCell::new($value))
     };
 }
-

@@ -25,7 +25,7 @@ pub struct LobbyCard<'a> {
 }
 
 impl<'a> LobbyCard<'a> {
-    const PADDING: f32 = 10f32;
+    const PADDING: f32 = 10.0;
     const COLOR_NOT_SELECTED: Color = Color::rgb(97, 97, 97);
     const COLOR_SELECTED: Color = Color::rgb(117, 117, 117);
 
@@ -39,8 +39,8 @@ impl<'a> LobbyCard<'a> {
         sender: mpsc::Sender<UIEvent>,
     ) -> LobbyCard<'a> {
         let bounds = FloatRect {
-            left: 0f32,
-            top: 0f32,
+            left: 0.0,
+            top: 0.0,
             width,
             height,
         };
@@ -54,7 +54,7 @@ impl<'a> LobbyCard<'a> {
         let text_height = name.character_size() as f32;
         name.set_position((
             bounds.left + LobbyCard::PADDING,
-            bounds.top + height / 2f32 - text_height / 2f32,
+            bounds.top + height / 2.0 - text_height / 2.0,
         ));
 
         let mut players = RcText::new(&format!("Players: {}", data.players), font, 32);
@@ -62,7 +62,7 @@ impl<'a> LobbyCard<'a> {
         let text_height = players.character_size() as f32;
         players.set_position((
             bounds.left + width - LobbyCard::PADDING - text_width,
-            bounds.top + height / 2f32 - text_height / 2f32,
+            bounds.top + height / 2.0 - text_height / 2.0,
         ));
 
         // shrink lobby name text so it doesnt overlap
@@ -100,7 +100,7 @@ impl<'a> LobbyCard<'a> {
         let text_height = self.name.character_size() as f32;
         self.name.set_position((
             self.bounds.left + LobbyCard::PADDING,
-            self.bounds.top + self.bounds.height / 2f32 - text_height / 2f32,
+            self.bounds.top + self.bounds.height / 2.0 - text_height / 2.0,
         ));
 
         self.players
@@ -109,7 +109,7 @@ impl<'a> LobbyCard<'a> {
         let text_height = self.players.character_size() as f32;
         self.players.set_position((
             self.bounds.left + self.bounds.width - LobbyCard::PADDING - text_width,
-            self.bounds.top + self.bounds.height / 2f32 - text_height / 2f32,
+            self.bounds.top + self.bounds.height / 2.0 - text_height / 2.0,
         ));
 
         // shrink lobby name text so it doesnt overlap
@@ -137,11 +137,7 @@ impl<'a> LobbyCard<'a> {
 }
 
 impl<'a> EventHandlerMut for LobbyCard<'a> {
-    fn handle_event(&mut self, e: Event) {
-        match e {
-            _ => {}
-        }
-    }
+    fn handle_event(&mut self, _e: Event) {}
 }
 
 impl<'a> Clickable for LobbyCard<'a> {

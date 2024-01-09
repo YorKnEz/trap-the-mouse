@@ -28,13 +28,13 @@ impl<'a> StartWindow<'a> {
         sender: mpsc::Sender<UIEvent>,
         // state: GameStateShared,
     ) -> StartWindow<'a> {
-        let x = WINDOW_SIZE / 2f32 - BUTTON_WIDTH / 2f32;
-        let y = WINDOW_SIZE / 2f32 - BUTTON_HEIGHT;
+        let x = WINDOW_SIZE / 2.0 - BUTTON_WIDTH / 2.0;
+        let y = WINDOW_SIZE / 2.0 - BUTTON_HEIGHT;
         let offset = BUTTON_HEIGHT + PADDING;
 
         let mut buttons = vec![];
 
-        let texts = vec!["Create lobby", "Join lobby", "Settings", "Exit"];
+        let texts = ["Create lobby", "Join lobby", "Settings", "Exit"];
 
         for i in 1..=4 {
             buttons.push(rc_cell!(Button::new(
@@ -81,13 +81,10 @@ impl<'a> WindowState for StartWindow<'a> {
 
 impl<'a> EventHandler for StartWindow<'a> {
     fn handle_event(&self, e: Event) {
-        match e {
-            Event::SFML(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
-                if button == mouse::Button::Left {
-                    self.clicker.click(x, y);
-                }
+        if let Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) = e {
+            if button == mouse::Button::Left {
+                self.clicker.click(x, y);
             }
-            _ => {}
         }
     }
 }

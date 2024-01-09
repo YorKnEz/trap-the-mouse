@@ -1,9 +1,9 @@
 pub mod db;
+mod game;
 mod lobby;
 mod request_handlers;
 mod server;
 mod types;
-mod game;
 
 pub use server::*;
 

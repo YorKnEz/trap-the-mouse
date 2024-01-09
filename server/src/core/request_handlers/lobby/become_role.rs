@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{UserType, UsersVec, UserInfoShort},
+    types::{UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -81,13 +81,10 @@ impl BecomeRoleRequest {
                 })
             }
             UserType::Player => {
-                match users.iter().find(|user| user.user_type == UserType::Player) {
-                    Some(_) => {
-                        return Err(ServerError::API {
-                            message: "cannot become player".to_string(),
-                        })
-                    }
-                    None => {}
+                if users.iter().any(|user| user.user_type == UserType::Player) {
+                    return Err(ServerError::API {
+                        message: "cannot become player".to_string(),
+                    });
                 }
             }
             UserType::Spectator => {}

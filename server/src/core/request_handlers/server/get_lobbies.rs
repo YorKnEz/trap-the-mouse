@@ -87,7 +87,7 @@ impl GetLobbiesRequest {
         let start = (self.start as usize).min(lobbies.len());
         let end = (start + self.offset as usize).min(lobbies.len());
 
-        Ok((&lobbies[start..end])
+        Ok(lobbies[start..end]
             .iter()
             .map(|item| LobbyAddr {
                 id: item.0,

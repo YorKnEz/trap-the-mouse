@@ -71,13 +71,13 @@ impl<'a> Scrollbar<'a> {
         let thumb = self.thumb.global_bounds();
         let bar = self.scrollbar.global_bounds();
 
-        let new_thumb_offset = if delta > 0f32 {
+        let new_thumb_offset = if delta > 0.0 {
             bar.top.max(thumb.top - delta * self.ratio * offset)
-        } else if delta < 0f32 {
+        } else if delta < 0.0 {
             (bar.top + bar.height).min(thumb.top + thumb.height - delta * self.ratio * offset)
                 - thumb.height
         } else {
-            0f32
+            0.0
         };
 
         self.thumb.set_position((thumb.left, new_thumb_offset));

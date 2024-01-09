@@ -1,17 +1,17 @@
+mod create_lobby;
 mod game;
 mod lobbies;
-mod start;
 mod settings;
-mod create_lobby;
+mod start;
 
 use anyhow::Result;
 use sfml::graphics::Drawable;
 
+pub use create_lobby::CreateLobbyWindow;
 pub use game::GameWindow;
 pub use lobbies::LobbiesWindow;
-pub use start::StartWindow;
 pub use settings::SettingsWindow;
-pub use create_lobby::CreateLobbyWindow;
+pub use start::StartWindow;
 
 use super::components::EventHandler;
 
