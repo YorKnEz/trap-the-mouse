@@ -43,9 +43,9 @@ impl GetLobbiesRequest {
 
         let _ = match conn.is_connected(self.user_id) {
             Ok(Some(db_user)) => db_user,
-            Ok(None) => return Err(ServerError::APINotConnected),
+            Ok(None) => return Err(ServerError::ApiNotConnected),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid id".to_string(),
                 })
             }
@@ -53,13 +53,13 @@ impl GetLobbiesRequest {
         };
 
         if self.offset > 10 {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "offset can be at most 10".to_string(),
             });
         }
 
         if self.start > self.start.wrapping_add(self.offset) {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "invalid range".to_string(),
             });
         }

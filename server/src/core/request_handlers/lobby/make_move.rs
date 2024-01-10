@@ -1,15 +1,15 @@
 use std::net::TcpStream;
 
 use anyhow::{anyhow, Result};
-use network::{request, SendRecv, Type};
+use network::{SendRecv, Type};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
     game::GameUpdate,
-    request_handlers::error_check,
-    types::{Game, UsersVec},
+    request_handlers::{dispatch, error_check},
+    types::{BoolMutex, Game, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -20,6 +20,7 @@ pub struct MakeMoveRequest {
     user_move: (i32, i32),
     users: UsersVec,
     game: Game,
+    running: BoolMutex,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -29,6 +30,7 @@ impl MakeMoveRequest {
         data: (u32, i32, i32),
         users: UsersVec,
         game: Game,
+        running: BoolMutex,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> MakeMoveRequest {
         MakeMoveRequest {
@@ -37,6 +39,7 @@ impl MakeMoveRequest {
             user_move: (data.1, data.2),
             users,
             game,
+            running,
             db_pool,
         }
     }
@@ -46,9 +49,9 @@ impl MakeMoveRequest {
 
         let _ = match conn.is_connected(self.user_id) {
             Ok(Some(db_user)) => db_user,
-            Ok(None) => return Err(ServerError::APINotConnected),
+            Ok(None) => return Err(ServerError::ApiNotConnected),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid id".to_string(),
                 })
             }
@@ -58,7 +61,7 @@ impl MakeMoveRequest {
         let mut game_state = self.game.lock().unwrap();
 
         if game_state.is_none() {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "game is not started yet".to_string(),
             });
         }
@@ -66,7 +69,7 @@ impl MakeMoveRequest {
         let game = game_state.as_mut().unwrap();
 
         if self.user_id != game.angel && self.user_id != game.devil {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "you are not playing".to_string(),
             });
         }
@@ -74,7 +77,7 @@ impl MakeMoveRequest {
         // devil player move
         let user_move = if game.turn {
             if self.user_id != game.devil {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "it's not your turn".to_string(),
                 });
             }
@@ -82,7 +85,7 @@ impl MakeMoveRequest {
             if game.grid[self.user_move.0 as usize][self.user_move.1 as usize]
                 || game.angel_pos == self.user_move
             {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid move".to_string(),
                 });
             }
@@ -94,13 +97,13 @@ impl MakeMoveRequest {
         // angel player move
         else {
             if self.user_id != game.angel {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "it's not your turn".to_string(),
                 });
             }
 
             if !game.valid_angel_move(self.user_move) {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid move".to_string(),
                 });
             }
@@ -122,10 +125,13 @@ impl MakeMoveRequest {
             *game_state = None;
         }
 
-        let users = self.users.lock().unwrap();
+        let mut users = self.users.lock().unwrap();
 
-        for user in users.iter() {
-            request(user.addr, Type::GameUpdated, &update)?;
+        if let Err(ServerError::InternalShutDown) =
+            dispatch(&mut users, vec![(Type::GameUpdated, &update)], |_| {})
+        {
+            let mut running = self.running.lock().unwrap();
+            *running = false;
         }
 
         Ok(())

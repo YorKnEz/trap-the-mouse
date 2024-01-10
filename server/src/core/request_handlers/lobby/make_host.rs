@@ -1,14 +1,14 @@
 use std::net::TcpStream;
 
 use anyhow::{anyhow, Result};
-use network::{request, SendRecv, Type};
+use network::{SendRecv, Type};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    request_handlers::error_check,
-    types::{Game, UserInfoShort, UserType, UsersVec},
+    request_handlers::{dispatch, error_check},
+    types::{BoolMutex, Game, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -19,6 +19,7 @@ pub struct MakeHostRequest {
     new_host_id: u32,
     users: UsersVec,
     game: Game,
+    running: BoolMutex,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -28,6 +29,7 @@ impl MakeHostRequest {
         data: (u32, u32),
         users: UsersVec,
         game: Game,
+        running: BoolMutex,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> MakeHostRequest {
         MakeHostRequest {
@@ -36,6 +38,7 @@ impl MakeHostRequest {
             new_host_id: data.1,
             users,
             game,
+            running,
             db_pool,
         }
     }
@@ -45,9 +48,9 @@ impl MakeHostRequest {
 
         let _ = match conn.is_connected(self.user_id) {
             Ok(Some(db_user)) => db_user,
-            Ok(None) => return Err(ServerError::APINotConnected),
+            Ok(None) => return Err(ServerError::ApiNotConnected),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid id".to_string(),
                 })
             }
@@ -60,7 +63,7 @@ impl MakeHostRequest {
             let host = match users.iter().find(|user| user.id == self.user_id) {
                 Some(index) => index,
                 None => {
-                    return Err(ServerError::API {
+                    return Err(ServerError::Api {
                         message: "you are not connected to this lobby".to_string(),
                     })
                 }
@@ -68,14 +71,14 @@ impl MakeHostRequest {
 
             {
                 if self.game.lock().unwrap().is_some() {
-                    return Err(ServerError::API {
+                    return Err(ServerError::Api {
                         message: "cannot change roles while a game is going on".to_string(),
                     });
                 }
             }
 
             if host.user_type != UserType::Host {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "you are not the host".to_string(),
                 });
             }
@@ -83,7 +86,7 @@ impl MakeHostRequest {
             let user = match users.iter().find(|user| user.id == self.new_host_id) {
                 Some(index) => index,
                 None => {
-                    return Err(ServerError::API {
+                    return Err(ServerError::Api {
                         message: "user is not connected to this lobby".to_string(),
                     })
                 }
@@ -95,17 +98,24 @@ impl MakeHostRequest {
         old_host.user_type = new_host.user_type;
         new_host.user_type = UserType::Host;
 
-        for user in users.iter_mut() {
-            if user.id == old_host.id {
-                user.user_type = old_host.user_type;
-            }
+        if let Err(ServerError::InternalShutDown) = dispatch(
+            &mut users,
+            vec![
+                (Type::PlayerUpdated, &old_host),
+                (Type::PlayerUpdated, &new_host),
+            ],
+            |user| {
+                if user.id == old_host.id {
+                    user.user_type = old_host.user_type;
+                }
 
-            if user.id == new_host.id {
-                user.user_type = new_host.user_type;
-            }
-
-            request(user.addr, Type::PlayerUpdated, &old_host)?;
-            request(user.addr, Type::PlayerUpdated, &new_host)?;
+                if user.id == new_host.id {
+                    user.user_type = new_host.user_type;
+                }
+            },
+        ) {
+            let mut running = self.running.lock().unwrap();
+            *running = false;
         }
 
         Ok(())

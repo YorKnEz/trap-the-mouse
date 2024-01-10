@@ -17,9 +17,12 @@ pub enum ServerError {
     #[error("internal error")]
     InternalAddrParseError(#[from] std::net::AddrParseError),
 
+    #[error("host lost connection")]
+    InternalShutDown,
+
     #[error("{message}")]
-    API { message: String },
+    Api { message: String },
 
     #[error("you are not connected")]
-    APINotConnected,
+    ApiNotConnected,
 }

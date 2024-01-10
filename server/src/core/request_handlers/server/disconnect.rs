@@ -35,9 +35,9 @@ impl DisconnectRequest {
 
         let db_user = match conn.is_connected(self.user_id) {
             Ok(Some(db_user)) => db_user,
-            Ok(None) => return Err(ServerError::APINotConnected),
+            Ok(None) => return Err(ServerError::ApiNotConnected),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid id".to_string(),
                 })
             }

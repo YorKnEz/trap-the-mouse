@@ -1,14 +1,14 @@
 use std::net::TcpStream;
 
 use anyhow::{anyhow, Result};
-use network::{request, SendRecv, Type};
+use network::{SendRecv, Type};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    request_handlers::error_check,
-    types::{Game, UserInfoShort, UserType, UsersVec},
+    request_handlers::{dispatch, error_check},
+    types::{BoolMutex, Game, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -19,6 +19,7 @@ pub struct BecomeRoleRequest {
     new_role: UserType,
     users: UsersVec,
     game: Game,
+    running: BoolMutex,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -28,6 +29,7 @@ impl BecomeRoleRequest {
         data: (u32, UserType),
         users: UsersVec,
         game: Game,
+        running: BoolMutex,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> BecomeRoleRequest {
         BecomeRoleRequest {
@@ -36,6 +38,7 @@ impl BecomeRoleRequest {
             new_role: data.1,
             users,
             game,
+            running,
             db_pool,
         }
     }
@@ -45,9 +48,9 @@ impl BecomeRoleRequest {
 
         let _ = match conn.is_connected(self.user_id) {
             Ok(Some(db_user)) => db_user,
-            Ok(None) => return Err(ServerError::APINotConnected),
+            Ok(None) => return Err(ServerError::ApiNotConnected),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid id".to_string(),
                 })
             }
@@ -59,7 +62,7 @@ impl BecomeRoleRequest {
         let mut new_user = match users.iter().find(|user| user.id == self.user_id) {
             Some(user) => UserInfoShort::from(user),
             None => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "you are not connected to this lobby".to_string(),
                 })
             }
@@ -67,33 +70,33 @@ impl BecomeRoleRequest {
 
         {
             if self.game.lock().unwrap().is_some() {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "cannot change roles while a game is going on".to_string(),
                 });
             }
         }
 
         if new_user.user_type == UserType::Host {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "you need to make someone else host".to_string(),
             });
         }
 
         if new_user.user_type == self.new_role {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "you already have this role".to_string(),
             });
         }
 
         match self.new_role {
             UserType::Host => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "you cannot become host".to_string(),
                 })
             }
             UserType::Player => {
                 if users.iter().any(|user| user.user_type == UserType::Player) {
-                    return Err(ServerError::API {
+                    return Err(ServerError::Api {
                         message: "cannot become player".to_string(),
                     });
                 }
@@ -103,12 +106,17 @@ impl BecomeRoleRequest {
 
         new_user.user_type = self.new_role;
 
-        for user in users.iter_mut() {
-            if user.id == new_user.id {
-                user.user_type = new_user.user_type;
-            }
-
-            request(user.addr, Type::PlayerUpdated, &new_user)?;
+        if let Err(ServerError::InternalShutDown) = dispatch(
+            &mut users,
+            vec![(Type::PlayerUpdated, &new_user)],
+            |user| {
+                if user.id == new_user.id {
+                    user.user_type = new_user.user_type;
+                }
+            },
+        ) {
+            let mut running = self.running.lock().unwrap();
+            *running = false;
         }
 
         Ok(())

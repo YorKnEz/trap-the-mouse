@@ -16,14 +16,14 @@ pub type HandleVec = RefCell<Vec<JoinHandle<()>>>;
 pub type RequestQueue = Arc<(Mutex<Vec<RequestQueueItem>>, Condvar)>;
 pub type RequestQueueItem = Box<dyn Request + Send>;
 
-#[derive(PartialEq, Clone, Copy, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum UserType {
     Host,
     Player,
     Spectator,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UserInfo {
     pub id: u32,
     pub user_type: UserType,
@@ -31,7 +31,7 @@ pub struct UserInfo {
     pub addr: SocketAddr,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct UserInfoShort {
     pub id: u32,
     pub user_type: UserType,

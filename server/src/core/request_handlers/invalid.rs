@@ -19,7 +19,7 @@ impl InvalidRequest {
     }
 
     fn handler(&self) -> Result<String, ServerError> {
-        Err(ServerError::API {
+        Err(ServerError::Api {
             message: self.reason.clone(),
         })
     }

@@ -36,7 +36,7 @@ impl ConnectRequest {
         let conn = self.db_pool.get()?;
 
         if !(2 <= self.name.len() && self.name.len() < 256) {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "username must be between 2 and 255 characters".to_string(),
             });
         }

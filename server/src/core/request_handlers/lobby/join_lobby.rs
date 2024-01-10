@@ -1,14 +1,13 @@
 use std::net::TcpStream;
 
 use anyhow::{anyhow, Result};
-use network::{request, SendRecv, Type};
-use r2d2::Pool;
-use r2d2_sqlite::SqliteConnectionManager;
+use network::{SendRecv, Type};
+use r2d2::Pool; use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    request_handlers::error_check,
-    types::{Game, LobbyName, LobbyState, UserInfo, UserInfoShort, UserType, UsersVec},
+    request_handlers::{dispatch, error_check},
+    types::{BoolMutex, Game, LobbyName, LobbyState, UserInfo, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -19,6 +18,7 @@ pub struct JoinLobbyRequest {
     lobby_name: LobbyName,
     users: UsersVec,
     game: Game,
+    running: BoolMutex,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -29,6 +29,7 @@ impl JoinLobbyRequest {
         lobby_name: LobbyName,
         users: UsersVec,
         game: Game,
+        running: BoolMutex,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> JoinLobbyRequest {
         JoinLobbyRequest {
@@ -37,6 +38,7 @@ impl JoinLobbyRequest {
             lobby_name,
             users,
             game,
+            running,
             db_pool,
         }
     }
@@ -46,9 +48,9 @@ impl JoinLobbyRequest {
 
         let db_user = match conn.is_connected(self.user_id) {
             Ok(Some(db_user)) => db_user,
-            Ok(None) => return Err(ServerError::APINotConnected),
+            Ok(None) => return Err(ServerError::ApiNotConnected),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid id".to_string(),
                 })
             }
@@ -58,7 +60,7 @@ impl JoinLobbyRequest {
         let mut users = self.users.lock().unwrap();
 
         if users.iter().any(|user| user.id == self.user_id) {
-            return Err(ServerError::API {
+            return Err(ServerError::Api {
                 message: "you are already connected to this lobby".to_string(),
             });
         }
@@ -76,8 +78,13 @@ impl JoinLobbyRequest {
 
         let new_user_short = UserInfoShort::from(&new_user);
 
-        for user in users.iter() {
-            request(user.addr, Type::PlayerJoined, &new_user_short)?;
+        if let Err(ServerError::InternalShutDown) = dispatch(
+            &mut users,
+            vec![(Type::PlayerJoined, &new_user_short)],
+            |_| {},
+        ) {
+            let mut running = self.running.lock().unwrap();
+            *running = false;
         }
 
         users.push(new_user);

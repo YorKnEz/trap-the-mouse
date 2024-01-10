@@ -43,9 +43,9 @@ impl CloseLobbyRequest {
 
         let _ = match conn.is_connected(self.user_id) {
             Ok(Some(db_user)) => db_user,
-            Ok(None) => return Err(ServerError::APINotConnected),
+            Ok(None) => return Err(ServerError::ApiNotConnected),
             Err(rusqlite::Error::QueryReturnedNoRows) => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "invalid id".to_string(),
                 })
             }
@@ -61,7 +61,7 @@ impl CloseLobbyRequest {
         {
             Some(user) => {
                 if user.user_type != UserType::Host {
-                    return Err(ServerError::API {
+                    return Err(ServerError::Api {
                         message: "you are not the host".to_string(),
                     });
                 }
@@ -70,7 +70,7 @@ impl CloseLobbyRequest {
                 *running = false;
             }
             None => {
-                return Err(ServerError::API {
+                return Err(ServerError::Api {
                     message: "you are not connected to this lobby".to_string(),
                 })
             }
