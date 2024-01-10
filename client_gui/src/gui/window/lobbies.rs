@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc};
 
 use anyhow::{anyhow, Result};
 use sfml::{
-    graphics::{Drawable, RcFont},
+    graphics::{Drawable, FloatRect, RcFont},
     window::mouse,
 };
 
@@ -40,8 +40,8 @@ impl<'a> LobbiesWindow<'a> {
         sender: mpsc::Sender<UIEvent>,
         state: GameStateShared,
     ) -> LobbiesWindow<'a> {
-        let x = (WINDOW_SIZE - (BUTTON_HEIGHT + PADDING + BUTTON_WIDTH + PADDING + BUTTON_WIDTH))
-            / 2.0;
+        let x =
+            (WINDOW_SIZE - (BUTTON_HEIGHT + PADDING + BUTTON_WIDTH + PADDING + BUTTON_WIDTH)) / 2.0;
 
         LobbiesWindow {
             window,
@@ -51,10 +51,7 @@ impl<'a> LobbiesWindow<'a> {
             search: rc_cell!(Button::new(
                 0,
                 window,
-                x,
-                40.0 + 600.0 + 10.0,
-                BUTTON_HEIGHT,
-                BUTTON_HEIGHT,
+                FloatRect::new(x, 40.0 + 600.0 + 10.0, BUTTON_HEIGHT, BUTTON_HEIGHT),
                 "S",
                 font,
                 sender.clone(),
@@ -62,10 +59,12 @@ impl<'a> LobbiesWindow<'a> {
             join_lobby: rc_cell!(Button::new(
                 2,
                 window,
-                x + PADDING + BUTTON_HEIGHT,
-                40.0 + 600.0 + 10.0,
-                BUTTON_WIDTH,
-                BUTTON_HEIGHT,
+                FloatRect::new(
+                    x + PADDING + BUTTON_HEIGHT,
+                    40.0 + 600.0 + 10.0,
+                    BUTTON_WIDTH,
+                    BUTTON_HEIGHT
+                ),
                 "Join Lobby",
                 font,
                 sender.clone(),
@@ -73,10 +72,12 @@ impl<'a> LobbiesWindow<'a> {
             back: rc_cell!(Button::new(
                 3,
                 window,
-                x + PADDING + BUTTON_HEIGHT + PADDING + BUTTON_WIDTH,
-                40.0 + 600.0 + 10.0,
-                BUTTON_WIDTH,
-                BUTTON_HEIGHT,
+                FloatRect::new(
+                    x + PADDING + BUTTON_HEIGHT + PADDING + BUTTON_WIDTH,
+                    40.0 + 600.0 + 10.0,
+                    BUTTON_WIDTH,
+                    BUTTON_HEIGHT
+                ),
                 "Back",
                 font,
                 sender.clone(),
@@ -85,10 +86,7 @@ impl<'a> LobbiesWindow<'a> {
             lobbies_scrollable: rc_cell!(Scrollable::new(
                 4,
                 window,
-                WINDOW_SIZE / 2.0 - 300.0,
-                40.0,
-                600.0,
-                600.0,
+                FloatRect::new(WINDOW_SIZE / 2.0 - 300.0, 40.0, 600.0, 600.0),
             )),
             font,
             sender,
@@ -172,10 +170,14 @@ impl<'a> LobbiesWindow<'a> {
                 lobby.id as u32,
                 self.window,
                 lobby_state,
-                bounds.width
-                    - Scrollable::<LobbyCard>::SCROLLBAR_WIDTH
-                    - 2.0 * Scrollable::<LobbyCard>::PADDING,
-                60.0,
+                FloatRect::new(
+                    0.0,
+                    0.0,
+                    bounds.width
+                        - Scrollable::<LobbyCard>::SCROLLBAR_WIDTH
+                        - 2.0 * Scrollable::<LobbyCard>::PADDING,
+                    60.0
+                ),
                 self.font,
                 self.sender.clone(),
             ));

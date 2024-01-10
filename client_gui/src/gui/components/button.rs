@@ -25,27 +25,17 @@ impl<'a> Button<'a> {
     pub fn new(
         id: u32,
         window: Window,
-        left: f32,
-        top: f32,
-        width: f32,
-        height: f32,
+        bounds: FloatRect,
         text: &str,
         font: &RcFont,
         sender: mpsc::Sender<UIEvent>,
     ) -> Button<'a> {
-        let bounds = FloatRect {
-            top,
-            left,
-            width,
-            height,
-        };
-
         let mut bg = RectangleShape::new();
         bg.set_size(Vector2f::new(
-            width - 2.0 * Button::BORDER,
-            height - 2.0 * Button::BORDER,
+            bounds.width - 2.0 * Button::BORDER,
+            bounds.height - 2.0 * Button::BORDER,
         ));
-        bg.set_position((left + Button::BORDER, top + Button::BORDER));
+        bg.set_position((bounds.left + Button::BORDER, bounds.top + Button::BORDER));
         bg.set_fill_color(Color::rgb(53, 232, 101));
 
         bg.set_outline_thickness(Button::BORDER);
@@ -57,8 +47,8 @@ impl<'a> Button<'a> {
         let text_height = text.character_size() as f32;
 
         text.set_position((
-            left + width / 2.0 - text_width / 2.0,
-            top + height / 2.0 - text_height / 2.0,
+            bounds.left + bounds.width / 2.0 - text_width / 2.0,
+            bounds.top + bounds.height / 2.0 - text_height / 2.0,
         ));
 
         Button {

@@ -30,9 +30,7 @@ impl<'a> InactiveInput<'a> {
     const BORDER: f32 = 2.0;
 
     pub fn new(
-        left: f32,
-        top: f32,
-        width: f32,
+        bounds: FloatRect,
         text_height: f32,
         font: &RcFont,
         value: &str,
@@ -40,10 +38,8 @@ impl<'a> InactiveInput<'a> {
         sender: mpsc::Sender<UIEvent>,
     ) -> InactiveInput<'a> {
         let bounds = FloatRect {
-            left,
-            top,
-            width,
             height: text_height + 2.0 * InactiveInput::TOP_PADDING + 2.0 * InactiveInput::BORDER,
+            ..bounds
         };
 
         let mut bg = RectangleShape::new();

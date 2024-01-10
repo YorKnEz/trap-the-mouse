@@ -33,20 +33,12 @@ impl<'a> LobbyCard<'a> {
         id: u32,
         window: Window,
         data: LobbyShort,
-        width: f32,
-        height: f32,
+        bounds: FloatRect,
         font: &RcFont,
         sender: mpsc::Sender<UIEvent>,
     ) -> LobbyCard<'a> {
-        let bounds = FloatRect {
-            left: 0.0,
-            top: 0.0,
-            width,
-            height,
-        };
-
         let mut bg = RectangleShape::new();
-        bg.set_size((width, height));
+        bg.set_size((bounds.width, bounds.height));
         bg.set_position((bounds.left, bounds.top));
         bg.set_fill_color(LobbyCard::COLOR_NOT_SELECTED);
 
@@ -54,15 +46,15 @@ impl<'a> LobbyCard<'a> {
         let text_height = name.character_size() as f32;
         name.set_position((
             bounds.left + LobbyCard::PADDING,
-            bounds.top + height / 2.0 - text_height / 2.0,
+            bounds.top + bounds.height / 2.0 - text_height / 2.0,
         ));
 
         let mut players = RcText::new(&format!("Players: {}", data.players), font, 32);
         let text_width = players.local_bounds().width;
         let text_height = players.character_size() as f32;
         players.set_position((
-            bounds.left + width - LobbyCard::PADDING - text_width,
-            bounds.top + height / 2.0 - text_height / 2.0,
+            bounds.left + bounds.width - LobbyCard::PADDING - text_width,
+            bounds.top + bounds.height / 2.0 - text_height / 2.0,
         ));
 
         // shrink lobby name text so it doesnt overlap

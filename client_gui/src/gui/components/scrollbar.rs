@@ -14,36 +14,23 @@ pub struct Scrollbar<'a> {
 }
 
 impl<'a> Scrollbar<'a> {
-    pub fn new(
-        left: f32,
-        top: f32,
-        width: f32,
-        height: f32,
-        scrollable_height: f32,
-    ) -> Scrollbar<'a> {
-        let bounds = FloatRect {
-            left,
-            top,
-            width,
-            height,
-        };
-
-        let ratio = height / scrollable_height;
+    pub fn new(bounds: FloatRect, scrollable_height: f32) -> Scrollbar<'a> {
+        let ratio = bounds.height / scrollable_height;
 
         let mut scrollbar = RectangleShape::new();
-        scrollbar.set_size((width, height));
-        scrollbar.set_position((left, top));
+        scrollbar.set_size((bounds.width, bounds.height));
+        scrollbar.set_position((bounds.left, bounds.top));
         scrollbar.set_fill_color(Color::rgb(54, 54, 54));
 
         let mut thumb = RectangleShape::new();
 
-        if scrollable_height < height {
-            thumb.set_size((width, height));
+        if scrollable_height < bounds.height {
+            thumb.set_size((bounds.width, bounds.height));
         } else {
-            thumb.set_size((width, height * ratio));
+            thumb.set_size((bounds.width, bounds.height * ratio));
         }
 
-        thumb.set_position((left, top));
+        thumb.set_position((bounds.left, bounds.top));
         thumb.set_fill_color(Color::rgb(145, 145, 145));
 
         Scrollbar {

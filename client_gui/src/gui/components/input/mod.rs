@@ -28,25 +28,19 @@ impl Input {
     pub fn new(
         id: u32,
         window: Window,
-
-        left: f32,
-        top: f32,
-        width: f32,
+        bounds: FloatRect,
         text_height: f32,
         font: &RcFont,
-        initial: &str,
         placeholder: &str,
         sender: mpsc::Sender<UIEvent>,
     ) -> Input {
         Input {
             event_data: EventData { window, id },
             state: Some(Box::new(InactiveInput::new(
-                left,
-                top,
-                width,
+                bounds,
                 text_height,
                 font,
-                initial,
+                "",
                 placeholder,
                 sender.clone(),
             ))),

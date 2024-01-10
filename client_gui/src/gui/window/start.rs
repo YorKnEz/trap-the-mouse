@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc, sync::mpsc};
 
 use sfml::{
-    graphics::{Drawable, RcFont},
+    graphics::{Drawable, FloatRect, RcFont},
     window::mouse,
 };
 
@@ -40,10 +40,7 @@ impl<'a> StartWindow<'a> {
             buttons.push(rc_cell!(Button::new(
                 i,
                 window,
-                x,
-                y + i as f32 * offset,
-                BUTTON_WIDTH,
-                BUTTON_HEIGHT,
+                FloatRect::new(x, y + i as f32 * offset, BUTTON_WIDTH, BUTTON_HEIGHT),
                 texts[i as usize - 1],
                 font,
                 sender.clone()

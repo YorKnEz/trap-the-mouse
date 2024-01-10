@@ -31,32 +31,20 @@ where
     pub const PADDING: f32 = 10.0;
     pub const SCROLLBAR_WIDTH: f32 = 20.0;
 
-    pub fn new(
-        id: u32,
-        window: Window,
-        left: f32,
-        top: f32,
-        width: f32,
-        height: f32,
-    ) -> Scrollable<'a, T> {
-        let bounds = FloatRect {
-            left,
-            top,
-            width,
-            height,
-        };
-
+    pub fn new(id: u32, window: Window, bounds: FloatRect) -> Scrollable<'a, T> {
         let scrollbar = Scrollbar::new(
-            left + width - Scrollable::<T>::SCROLLBAR_WIDTH,
-            top,
-            Scrollable::<T>::SCROLLBAR_WIDTH,
-            height,
+            FloatRect::new(
+                bounds.left + bounds.width - Scrollable::<T>::SCROLLBAR_WIDTH,
+                bounds.top,
+                Scrollable::<T>::SCROLLBAR_WIDTH,
+                bounds.height,
+            ),
             0.0,
         );
 
         let mut bg = RectangleShape::new();
-        bg.set_size((width, height));
-        bg.set_position((left, top));
+        bg.set_size((bounds.width, bounds.height));
+        bg.set_position((bounds.left, bounds.top));
         bg.set_fill_color(Color::rgb(45, 45, 45));
 
         Scrollable {
@@ -117,7 +105,6 @@ where
             // 0.01 because floats are funny and sizes are big so 0.01 is really small in comparison
             if rem_bounds.top + rem_bounds.height < self.bounds.top + Scrollable::<T>::PADDING - 0.01 {
                 // if there are no items to bring down we need to move the whole view
-                println!("first");
                 (0..index, rem, shift)
             }
             // if the removed item is in or below the view bring the items below it up
@@ -152,10 +139,8 @@ where
                         - (last.top + shift + last.height))
                         .min((self.bounds.top + Scrollable::<T>::PADDING - first.top).max(0.0));
 
-                    println!("second");
                     (0..self.list.len(), shift, shift)
                 } else {
-                    println!("third");
                     (index..self.list.len(), shift, 0.0)
                 }
             };

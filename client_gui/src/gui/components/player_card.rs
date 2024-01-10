@@ -38,20 +38,12 @@ impl<'a> PlayerCard<'a> {
         id: u32,
         window: Window,
         data: Player,
-        width: f32,
-        height: f32,
+        bounds: FloatRect,
         font: &RcFont,
         sender: mpsc::Sender<UIEvent>,
     ) -> PlayerCard<'a> {
-        let bounds = FloatRect {
-            left: 0.0,
-            top: 0.0,
-            width,
-            height,
-        };
-
         let mut bg = RectangleShape::new();
-        bg.set_size((width, height));
+        bg.set_size((bounds.width, bounds.height));
         bg.set_position((bounds.left, bounds.top));
         bg.set_fill_color(PlayerCard::COLOR_NOT_SELECTED);
 

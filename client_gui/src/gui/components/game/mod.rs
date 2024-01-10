@@ -34,22 +34,7 @@ pub struct Game {
 impl Game {
     const REAL_WIDTH: f32 = 64.0;
 
-    pub fn new(
-        id: u32,
-        window: Window,
-        left: f32,
-        top: f32,
-        width: f32,
-        height: f32,
-        sender: mpsc::Sender<UIEvent>,
-    ) -> Game {
-        let bounds = FloatRect {
-            left,
-            top,
-            width,
-            height,
-        };
-
+    pub fn new(id: u32, window: Window, bounds: FloatRect, sender: mpsc::Sender<UIEvent>) -> Game {
         let tile_width = bounds.width / (2 * GRID_SIZE + 1) as f32;
         let ratio = tile_width / Game::REAL_WIDTH;
 
@@ -222,16 +207,17 @@ impl Drawable for Game {
             }
         }
 
+        let border = 2.0;
         let mut cover = RectangleShape::new();
         if self.began {
             cover.set_fill_color(Color::TRANSPARENT);
         } else {
             cover.set_fill_color(Color::rgba(0, 0, 0, 200));
         }
-        cover.set_size((self.bounds.width, self.bounds.height));
-        cover.set_position((self.bounds.left, self.bounds.top));
+        cover.set_size((self.bounds.width - 2.0 * border, self.bounds.height - 2.0 * border));
+        cover.set_position((self.bounds.left + border, self.bounds.top + border));
         cover.set_outline_color(Color::BLACK);
-        cover.set_outline_thickness(2.0);
+        cover.set_outline_thickness(border);
         target.draw(&cover);
     }
 }

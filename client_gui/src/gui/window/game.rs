@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, sync::mpsc};
 
 use anyhow::anyhow;
 use sfml::{
-    graphics::{Drawable, RcFont, RcText, Transformable},
+    graphics::{Drawable, FloatRect, RcFont, RcText, Transformable},
     system::Vector2f,
     window::mouse,
 };
@@ -14,7 +14,8 @@ use crate::{
     },
     events::{Event, NetworkEvent, UIEvent, Window},
     gui::components::{
-        game::Game, Button, Clickable, Clicker, EventHandler, Fixed, PlayerCard, Scrollable,
+        game::Game, Button, Clickable, Clicker, EventHandler, EventHandlerMut, Fixed, PlayerCard,
+        Scrollable,
     },
     rc_cell,
     types::{GameStateShared, Lobby, Player, RcCell, UserType},
@@ -62,10 +63,12 @@ impl<'a> GameWindow<'a> {
             buttons.push(rc_cell!(Button::new(
                 i as u32,
                 window,
-                0.0,
-                0.0,
-                WINDOW_SIZE - (GameWindow::GAME_WIDTH + 3.0 * PADDING),
-                BUTTON_HEIGHT,
+                FloatRect::new(
+                    0.0,
+                    0.0,
+                    WINDOW_SIZE - (GameWindow::GAME_WIDTH + 3.0 * PADDING),
+                    BUTTON_HEIGHT
+                ),
                 text,
                 font,
                 sender.clone(),
@@ -91,18 +94,22 @@ impl<'a> GameWindow<'a> {
             players_scrollable: rc_cell!(Scrollable::new(
                 6,
                 window,
-                WINDOW_SIZE - PADDING - 240.0,
-                PADDING + GameWindow::GAME_HEIGHT + PADDING,
-                240.0,
-                WINDOW_SIZE - (GameWindow::GAME_HEIGHT + 3.0 * PADDING),
+                FloatRect::new(
+                    WINDOW_SIZE - PADDING - 240.0,
+                    PADDING + GameWindow::GAME_HEIGHT + PADDING,
+                    240.0,
+                    WINDOW_SIZE - (GameWindow::GAME_HEIGHT + 3.0 * PADDING)
+                ),
             )),
             game: rc_cell!(Game::new(
                 7,
                 window,
-                WINDOW_SIZE - 10.0 - GameWindow::GAME_WIDTH,
-                10.0,
-                GameWindow::GAME_WIDTH,
-                GameWindow::GAME_HEIGHT,
+                FloatRect::new(
+                    WINDOW_SIZE - 10.0 - GameWindow::GAME_WIDTH,
+                    10.0,
+                    GameWindow::GAME_WIDTH,
+                    GameWindow::GAME_HEIGHT
+                ),
                 sender.clone()
             )),
             clicker: Clicker::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
@@ -126,10 +133,14 @@ impl<'a> GameWindow<'a> {
             player.id,
             self.window,
             player.clone(),
-            bounds.width
-                - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
-                - 2.0 * Scrollable::<PlayerCard>::PADDING,
-            60.0,
+            FloatRect::new(
+                0.0,
+                0.0,
+                bounds.width
+                    - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
+                    - 2.0 * Scrollable::<PlayerCard>::PADDING,
+                60.0
+            ),
             self.font,
             self.sender.clone(),
         ));
@@ -243,10 +254,14 @@ impl<'a> WindowState for GameWindow<'a> {
                 player.id,
                 self.window,
                 player.clone(),
-                bounds.width
-                    - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
-                    - 2.0 * Scrollable::<PlayerCard>::PADDING,
-                60.0,
+                FloatRect::new(
+                    0.0,
+                    0.0,
+                    bounds.width
+                        - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
+                        - 2.0 * Scrollable::<PlayerCard>::PADDING,
+                    60.0
+                ),
                 self.font,
                 self.sender.clone(),
             ));
