@@ -8,7 +8,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 use crate::core::{
     db::UserOps,
     request_handlers::error_check,
-    types::{UserInfoShort, UserType, UsersVec},
+    types::{Game, UserInfoShort, UserType, UsersVec},
 };
 
 use super::{error::ServerError, Request};
@@ -18,6 +18,7 @@ pub struct BecomeRoleRequest {
     user_id: u32,
     new_role: UserType,
     users: UsersVec,
+    game: Game,
     db_pool: Pool<SqliteConnectionManager>,
 }
 
@@ -26,6 +27,7 @@ impl BecomeRoleRequest {
         stream: TcpStream,
         data: (u32, UserType),
         users: UsersVec,
+        game: Game,
         db_pool: Pool<SqliteConnectionManager>,
     ) -> BecomeRoleRequest {
         BecomeRoleRequest {
@@ -33,6 +35,7 @@ impl BecomeRoleRequest {
             user_id: data.0,
             new_role: data.1,
             users,
+            game,
             db_pool,
         }
     }
@@ -61,6 +64,14 @@ impl BecomeRoleRequest {
                 })
             }
         };
+
+        {
+            if self.game.lock().unwrap().is_some() {
+                return Err(ServerError::API {
+                    message: "cannot change roles while a game is going on".to_string(),
+                });
+            }
+        }
 
         if new_user.user_type == UserType::Host {
             return Err(ServerError::API {
