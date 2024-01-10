@@ -7,7 +7,7 @@ use sfml::{
 
 use crate::{
     events::{Event, PlayerCardEventData, UIEvent, Window},
-    types::Player,
+    types::{Player, UserType},
 };
 
 use super::{Clickable, EventHandlerMut, Fixed};
@@ -29,6 +29,10 @@ impl<'a> PlayerCard<'a> {
     const TOP_PADDING: f32 = 4.0;
     const COLOR_NOT_SELECTED: Color = Color::rgb(97, 97, 97);
     const COLOR_SELECTED: Color = Color::rgb(117, 117, 117);
+
+    const HOST_COLOR: Color = Color::rgb(235, 64, 52);
+    const PLAYER_COLOR: Color = Color::rgb(52, 235, 226);
+    const SPECTATOR_COLOR: Color = Color::WHITE;
 
     pub fn new(
         id: u32,
@@ -64,7 +68,11 @@ impl<'a> PlayerCard<'a> {
             bounds.left + PlayerCard::LEFT_PADDING,
             bounds.top + bounds.height - PlayerCard::LEFT_PADDING - text_height,
         ));
-        user_type.set_fill_color(Color::rgb(200, 200, 200));
+        match data.user_type {
+            UserType::Host => user_type.set_fill_color(PlayerCard::HOST_COLOR),
+            UserType::Player => user_type.set_fill_color(PlayerCard::PLAYER_COLOR),
+            UserType::Spectator => user_type.set_fill_color(PlayerCard::SPECTATOR_COLOR),
+        }
 
         // shrink lobby name text so it doesnt overflow
         let mut i = data.name.len();
@@ -110,7 +118,11 @@ impl<'a> PlayerCard<'a> {
             self.bounds.left + PlayerCard::LEFT_PADDING,
             self.bounds.top + self.bounds.height - PlayerCard::LEFT_PADDING - text_height,
         ));
-        self.user_type.set_fill_color(Color::rgb(200, 200, 200));
+        match data.user_type {
+            UserType::Host => self.user_type.set_fill_color(PlayerCard::HOST_COLOR),
+            UserType::Player => self.user_type.set_fill_color(PlayerCard::PLAYER_COLOR),
+            UserType::Spectator => self.user_type.set_fill_color(PlayerCard::SPECTATOR_COLOR),
+        }
 
         // shrink lobby self.name text so it doesnt overflow
         let mut i = data.name.len();

@@ -357,7 +357,7 @@ impl<'a> EventHandler for GameWindow<'a> {
             }
             Event::Network(NetworkEvent::GameUpdated(e)) => {
                 let mut host = String::new();
-                let mut player = String::new();
+                let mut player = String::from("computer");
 
                 self.state
                     .borrow()
