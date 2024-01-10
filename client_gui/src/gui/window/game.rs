@@ -247,9 +247,7 @@ impl<'a> WindowState for GameWindow<'a> {
 
         let bounds = players_scrollable.bounds();
 
-        let players = &lobby.players;
-
-        for player in players {
+        for player in &lobby.players {
             let card = rc_cell!(PlayerCard::new(
                 player.id,
                 self.window,
@@ -291,6 +289,10 @@ impl<'a> WindowState for GameWindow<'a> {
 
 impl<'a> EventHandler for GameWindow<'a> {
     fn handle_event(&self, e: Event) {
+        {
+            self.players_scrollable.borrow_mut().handle_event(e.clone());
+        }
+
         match e {
             Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {

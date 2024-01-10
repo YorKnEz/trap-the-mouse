@@ -3,7 +3,7 @@ use std::{
     fmt::Display,
     net::SocketAddr,
     rc::Rc,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex}, collections::VecDeque,
 };
 
 use crate::events::Event;
@@ -11,7 +11,7 @@ use serde_derive::{Deserialize, Serialize};
 
 pub type BoolMutex = Arc<Mutex<bool>>;
 
-pub type EventQueue = Arc<Mutex<Vec<EventQueueItem>>>;
+pub type EventQueue = Arc<Mutex<VecDeque<EventQueueItem>>>;
 pub type EventQueueItem = Event;
 pub type UserId = u32;
 pub type UserName = String;

@@ -145,11 +145,11 @@ fn main() {
                         3 => switch_state(current_window.clone(), &start_window),
                         _ => {}
                     },
-                    Window::Settings => {
-                        if event_data.id == 2 {
-                            switch_state(current_window.clone(), &start_window);
-                        }
-                    }
+                    Window::Settings => match event_data.id {
+                        1 => switch_state(current_window.clone(), &start_window),
+                        2 => switch_state(current_window.clone(), &start_window),
+                        _ => {}
+                    },
                     Window::Game => match event_data.id {
                         0 => println!("start game"),
                         1 => println!("make host"),

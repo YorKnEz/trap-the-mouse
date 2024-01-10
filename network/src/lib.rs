@@ -20,7 +20,7 @@ struct Header {
     h_type: Type,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(C)]
 pub enum Type {
     // value used for initializations

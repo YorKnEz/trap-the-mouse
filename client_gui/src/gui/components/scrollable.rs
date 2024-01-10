@@ -163,7 +163,9 @@ where
     }
 
     pub fn clear(&mut self) {
-        self.list.clear();
+        while !self.list.is_empty() {
+            self.remove(self.list.len() - 1);
+        }
     }
 
     pub fn scroll_by(&mut self, delta: f32, offset: f32) {
