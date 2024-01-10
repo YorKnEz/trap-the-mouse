@@ -6,10 +6,10 @@ pub const GRID_SIZE: usize = 11;
 
 #[derive(Clone, Serialize)]
 pub struct GameState {
-    pub angel: u32, // id of the user that is the angel, if 0 it's the computer
     pub devil: u32, // id of the user that is the devil
-    pub devil_pos: (i32, i32),
-    pub turn: bool,                           // true - angel, false - devil
+    pub angel: u32, // id of the user that is the nagel, if 0 it's the computer
+    pub angel_pos: (i32, i32),
+    pub turn: bool,                           // false - angel, true - devil
     pub grid: [[bool; GRID_SIZE]; GRID_SIZE], // whether the tile is blocked or not
 }
 
@@ -27,22 +27,22 @@ impl GameState {
     ];
 
     pub fn new(angel: u32, devil: u32) -> GameState {
-        let devil_pos = (GRID_SIZE as i32 / 2, GRID_SIZE as i32 / 2);
+        let angel_pos = (GRID_SIZE as i32 / 2, GRID_SIZE as i32 / 2);
 
         let mut grid = [[false; GRID_SIZE]; GRID_SIZE];
 
         for (i, line) in grid.iter_mut().enumerate() {
             for (j, item) in line.iter_mut().enumerate() {
-                if i as i32 != devil_pos.0 && j as i32 != devil_pos.1 {
+                if i as i32 != angel_pos.0 && j as i32 != angel_pos.1 {
                     *item = (rand::random::<u32>() % 100) < 12;
                 }
             }
         }
 
         GameState {
-            angel,
             devil,
-            devil_pos,
+            angel,
+            angel_pos,
             turn: false,
             grid,
         }
@@ -52,7 +52,7 @@ impl GameState {
         0 <= pos.0 && pos.0 < GRID_SIZE as i32 && 0 <= pos.1 && pos.1 < GRID_SIZE as i32
     }
 
-    pub fn valid_devil_move(&self, pos: (i32, i32)) -> bool {
+    pub fn valid_angel_move(&self, pos: (i32, i32)) -> bool {
         if !self.contains(pos) {
             return false;
         }
@@ -61,8 +61,8 @@ impl GameState {
             return false;
         }
 
-        for off in GameState::D[(self.devil_pos.0 % 2) as usize] {
-            let new_pos = (self.devil_pos.0 + off.0, self.devil_pos.1 + off.1);
+        for off in GameState::D[(self.angel_pos.0 % 2) as usize] {
+            let new_pos = (self.angel_pos.0 + off.0, self.angel_pos.1 + off.1);
             if self.contains(new_pos) && new_pos == pos {
                 return true;
             }
@@ -71,18 +71,18 @@ impl GameState {
         false
     }
 
-    pub fn devil_won(&self) -> bool {
-        self.reached_border(self.devil_pos)
+    pub fn angel_won(&self) -> bool {
+        self.reached_border(self.angel_pos)
     }
 
     fn reached_border(&self, pos: (i32, i32)) -> bool {
         pos.0 == 0 || pos.0 == GRID_SIZE as i32 - 1 || pos.1 == 0 || pos.1 == GRID_SIZE as i32 - 1
     }
 
-    pub fn angel_won(&self) -> bool {
+    pub fn devil_won(&self) -> bool {
         let mut visited = [[false; GRID_SIZE]; GRID_SIZE];
 
-        !self.border_reachable(self.devil_pos, &mut visited)
+        !self.border_reachable(self.angel_pos, &mut visited)
     }
 
     fn border_reachable(

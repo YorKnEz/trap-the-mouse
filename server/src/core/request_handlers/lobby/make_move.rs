@@ -7,7 +7,7 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
-    game::{GameUpdate, GRID_SIZE},
+    game::GameUpdate,
     request_handlers::error_check,
     types::{Game, UsersVec},
 };
@@ -65,37 +65,22 @@ impl MakeMoveRequest {
 
         let game = game_state.as_mut().unwrap();
 
-        if self.user_id != game.devil && self.user_id != game.angel {
+        if self.user_id != game.angel && self.user_id != game.devil {
             return Err(ServerError::API {
                 message: "you are not playing".to_string(),
             });
         }
 
-        let user_move = if !game.turn {
+        // devil player move
+        let user_move = if game.turn {
             if self.user_id != game.devil {
                 return Err(ServerError::API {
                     message: "it's not your turn".to_string(),
                 });
             }
 
-            if !game.valid_devil_move(self.user_move) {
-                return Err(ServerError::API {
-                    message: "invalid move".to_string(),
-                });
-            }
-
-            game.devil_pos = self.user_move;
-
-            self.user_move
-        } else if game.angel > 0 {
-            if self.user_id != game.angel {
-                return Err(ServerError::API {
-                    message: "it's not your turn".to_string(),
-                });
-            }
-
             if game.grid[self.user_move.0 as usize][self.user_move.1 as usize]
-                || game.devil_pos == self.user_move
+                || game.angel_pos == self.user_move
             {
                 return Err(ServerError::API {
                     message: "invalid move".to_string(),
@@ -105,19 +90,24 @@ impl MakeMoveRequest {
             game.grid[self.user_move.0 as usize][self.user_move.1 as usize] = true;
 
             self.user_move
-        } else {
-            // pick a random tile to block
-            loop {
-                let pos = (
-                    (rand::random::<usize>() % GRID_SIZE) as i32,
-                    (rand::random::<usize>() % GRID_SIZE) as i32,
-                );
-
-                if !game.grid[pos.0 as usize][pos.1 as usize] && game.devil_pos != pos {
-                    game.grid[pos.0 as usize][pos.1 as usize] = true;
-                    break pos;
-                }
+        }
+        // angel player move
+        else {
+            if self.user_id != game.angel {
+                return Err(ServerError::API {
+                    message: "it's not your turn".to_string(),
+                });
             }
+
+            if !game.valid_angel_move(self.user_move) {
+                return Err(ServerError::API {
+                    message: "invalid move".to_string(),
+                });
+            }
+
+            game.angel_pos = self.user_move;
+
+            self.user_move
         };
 
         let update = GameUpdate {
@@ -125,8 +115,6 @@ impl MakeMoveRequest {
             turn: game.turn,
             user_move,
         };
-
-        println!("{update:?}");
 
         game.turn = !game.turn;
 
