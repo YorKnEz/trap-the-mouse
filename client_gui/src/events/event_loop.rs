@@ -1,4 +1,5 @@
 use std::{
+    collections::VecDeque,
     io,
     net::{SocketAddr, TcpListener},
     sync::{mpsc, Arc, Mutex},
@@ -27,7 +28,7 @@ pub struct EventLoop {
 impl EventLoop {
     pub fn new() -> Result<EventLoop> {
         let running = Arc::new(Mutex::new(true));
-        let events = Arc::new(Mutex::new(vec![]));
+        let events = Arc::new(Mutex::new(VecDeque::new()));
 
         let server = TcpListener::bind("127.0.0.1:0")?;
         server.set_nonblocking(true)?;
@@ -63,7 +64,7 @@ impl EventLoop {
 
     pub fn get_event(&self) -> Option<EventQueueItem> {
         let mut events = self.events.lock().unwrap();
-        events.pop()
+        events.pop_front()
     }
 
     pub fn stop(&self) {
@@ -110,27 +111,45 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
                 let ev: Option<NetworkEvent> = match req_type {
                     Type::PlayerJoined => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::PlayerJoined(PlayerJoinedEvent::new(buf))),
-                        Err(_) => None,
+                        Err(e) => {
+                            println!("{e}");
+                            None
+                        }
                     },
                     Type::PlayerLeft => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::PlayerLeft(PlayerLeftEvent::new(buf))),
-                        Err(_) => None,
+                        Err(e) => {
+                            println!("{e}");
+                            None
+                        }
                     },
                     Type::PlayerUpdated => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::PlayerUpdated(PlayerUpdatedEvent::new(buf))),
-                        Err(_) => None,
+                        Err(e) => {
+                            println!("{e}");
+                            None
+                        }
                     },
                     Type::GameStarted => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::GameStarted(GameStartedEvent::new(buf))),
-                        Err(_) => None,
+                        Err(e) => {
+                            println!("{e}");
+                            None
+                        }
                     },
                     Type::GameUpdated => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::GameUpdated(GameUpdatedEvent::new(buf))),
-                        Err(_) => None,
+                        Err(e) => {
+                            println!("{e}");
+                            None
+                        }
                     },
                     Type::LobbyClosing => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::LobbyClosing(LobbyClosingEvent::new(buf))),
-                        Err(_) => None,
+                        Err(e) => {
+                            println!("{e}");
+                            None
+                        }
                     },
                     _ => None,
                 };
@@ -153,7 +172,7 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
 
         if let Some(ev) = ev {
             let mut events = events.lock().unwrap();
-            events.push(ev);
+            events.push_back(ev);
         }
     }
 }
@@ -175,7 +194,7 @@ pub fn ui_event_loop_thread(
 
         if let Ok(ev) = receiver.try_recv() {
             let mut events = events.lock().unwrap();
-            events.push(Event::UI(ev));
+            events.push_back(Event::UI(ev));
         }
     }
 }
