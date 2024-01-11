@@ -51,6 +51,7 @@ pub enum Type {
     GameStarted,
     GameUpdated,
     LobbyClosing,
+    Message,
     // responses
     Success,
     Error,

@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 use super::request_handlers::{
     BecomeRoleRequest, ChangedNameRequest, CloseLobbyRequest, GetLobbyStateRequest, InvalidRequest,
     JoinLobbyRequest, LeaveLobbyRequest, MakeHostRequest, MakeMoveRequest, PingRequest,
-    StartGameRequest,
+    StartGameRequest, SendMessageRequest,
 };
 use super::types::{Game, LobbyId, LobbyName, UsersVec};
 use super::{RequestHandler, RequestQueueItem, ServerCore};
@@ -93,6 +93,16 @@ impl RequestHandler for Lobby {
                     buf,
                     Arc::clone(&self.users),
                     Arc::clone(&self.game),
+                    Arc::clone(&self.server.running),
+                    self.server.db_pool.clone(),
+                )),
+                Err(_) => Box::new(InvalidRequest::new(stream, "invalid data")),
+            },
+            Type::SendMessage => match bincode::deserialize(&buf) {
+                Ok(buf) => Box::new(SendMessageRequest::new(
+                    stream,
+                    buf,
+                    Arc::clone(&self.users),
                     Arc::clone(&self.server.running),
                     self.server.db_pool.clone(),
                 )),
