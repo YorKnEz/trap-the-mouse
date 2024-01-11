@@ -2,7 +2,8 @@ use std::net::TcpStream;
 
 use anyhow::{anyhow, Result};
 use network::{SendRecv, Type};
-use r2d2::Pool; use r2d2_sqlite::SqliteConnectionManager;
+use r2d2::Pool;
+use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::core::{
     db::UserOps,
@@ -78,13 +79,15 @@ impl JoinLobbyRequest {
 
         let new_user_short = UserInfoShort::from(&new_user);
 
-        if let Err(ServerError::InternalShutDown) = dispatch(
-            &mut users,
-            vec![(Type::PlayerJoined, &new_user_short)],
-            |_| {},
-        ) {
-            let mut running = self.running.lock().unwrap();
-            *running = false;
+        if !users.is_empty() {
+            if let Err(ServerError::InternalShutDown) = dispatch(
+                &mut users,
+                vec![(Type::PlayerJoined, &new_user_short)],
+                |_| {},
+            ) {
+                let mut running = self.running.lock().unwrap();
+                *running = false;
+            }
         }
 
         users.push(new_user);
