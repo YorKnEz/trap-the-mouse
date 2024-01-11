@@ -116,7 +116,7 @@ impl<'a> GameWindow<'a> {
                 FloatRect::new(
                     WINDOW_SIZE - 10.0 - GameWindow::GAME_WIDTH,
                     GameWindow::GAME_HEIGHT + 2.0 * PADDING,
-                    GameWindow::GAME_WIDTH - 2.0 * PADDING - 240.0,
+                    GameWindow::GAME_WIDTH - PADDING - 240.0,
                     WINDOW_SIZE - (GameWindow::GAME_HEIGHT + 3.0 * PADDING)
                 ),
                 font,

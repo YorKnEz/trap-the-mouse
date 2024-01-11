@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc, sync::mpsc};
 
 use sfml::{
-    graphics::{Drawable, RcFont},
+    graphics::{Drawable,  RcFont},
     window::mouse,
 };
 

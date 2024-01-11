@@ -11,6 +11,23 @@ use crate::events::{EventData, UIEvent, Window};
 
 use super::{Fixed, MouseEventObserver};
 
+pub struct Button<'a> {
+    event_data: EventData,
+    bounds: FloatRect,
+    bg: RectangleShape<'a>,
+    text: RcText,
+    sender: mpsc::Sender<UIEvent>,
+    selected: bool,
+    colors: ButtonColors,
+}
+
+struct ButtonColors {
+    border: Color,
+    bg: Color,
+    bg_hover: Color,
+    bg_clicked: Color,
+}
+
 pub struct ButtonBuilder {
     position: Option<Vector2f>,
     size: Option<Vector2f>,
@@ -25,19 +42,6 @@ pub struct ButtonBuilder {
 impl ButtonBuilder {
     const BUTTON_WIDTH: f32 = 240.0;
     const BUTTON_HEIGHT: f32 = 60.0;
-
-    const GREEN_BUTTON: ButtonColors = ButtonColors {
-        border: Color::rgb(45, 168, 78),
-        bg: Color::rgb(53, 232, 101),
-        bg_hover: Color::rgb(71, 235, 115),
-        bg_clicked: Color::rgb(90, 237, 129),
-    };
-    const RED_BUTTON: ButtonColors = ButtonColors {
-        border: Color::rgb(168, 45, 45),
-        bg: Color::rgb(232, 53, 53),
-        bg_hover: Color::rgb(235, 71, 71),
-        bg_clicked: Color::rgb(237, 90, 90),
-    };
 
     pub fn set_position(mut self, left: f32, top: f32) -> Self {
         self.position = Some(Vector2f::new(left, top));
@@ -60,13 +64,10 @@ impl ButtonBuilder {
         self
     }
 
-    pub fn set_colors(mut self, variant: ButtonVariant) -> Self {
-        self.colors = Some(match variant {
-            ButtonVariant::Red => ButtonBuilder::RED_BUTTON,
-            // ButtonVariant::Green => ButtonBuilder::GREEN_BUTTON,
-        });
-        self
-    }
+    // pub fn set_colors(mut self, colors: ButtonColors) -> Self {
+    //     self.colors = Some(colors);
+    //     self
+    // }
 
     pub fn set_text(mut self, text: &str) -> Self {
         self.text = Some(String::from(text));
@@ -83,18 +84,18 @@ impl ButtonBuilder {
         self
     }
 
-    pub fn set_center_text(mut self, center_text: bool) -> Self {
-        self.center_text = Some(center_text);
-        self
-    }
+    // pub fn set_center_text(mut self, center_text: bool) -> Self {
+    //     self.center_text = Some(center_text);
+    //     self
+    // }
 
-    pub fn build<'a>(
+    pub fn build(
         self,
         id: u32,
         window: Window,
         sender: mpsc::Sender<UIEvent>,
-        font: &'a RcFont,
-    ) -> Button<'a> {
+        font: &RcFont,
+    ) -> Button {
         let position = self.position.unwrap_or(Vector2f::new(0.0, 0.0));
         let size = self.size.unwrap_or(Vector2f::new(
             ButtonBuilder::BUTTON_WIDTH,
@@ -102,7 +103,12 @@ impl ButtonBuilder {
         ));
         let bounds = FloatRect::new(position.x, position.y, size.x, size.y);
         let border = self.border.unwrap_or(4.0);
-        let colors = self.colors.unwrap_or(ButtonBuilder::GREEN_BUTTON);
+        let colors = self.colors.unwrap_or(ButtonColors {
+            border: Color::rgb(45, 168, 78),
+            bg: Color::rgb(53, 232, 101),
+            bg_hover: Color::rgb(71, 235, 115),
+            bg_clicked: Color::rgb(90, 237, 129),
+        });
         let text = self.text.unwrap_or("My Button".to_string());
         let font_size = self.font_size.unwrap_or(20);
         let font_style = self.font_style.unwrap_or(TextStyle::BOLD);
@@ -130,7 +136,7 @@ impl ButtonBuilder {
             ));
         } else {
             text.set_position((
-                bounds.left,
+                bounds.left + 10.0,
                 bounds.top + bounds.height / 2.0 - font_size as f32 / 2.0,
             ));
         }
@@ -145,29 +151,6 @@ impl ButtonBuilder {
             colors,
         }
     }
-}
-
-pub struct Button<'a> {
-    event_data: EventData,
-    bounds: FloatRect,
-    bg: RectangleShape<'a>,
-    text: RcText,
-    sender: mpsc::Sender<UIEvent>,
-    selected: bool,
-    colors: ButtonColors,
-}
-
-#[derive(PartialEq)]
-pub enum ButtonVariant {
-    // Green,
-    Red,
-}
-
-struct ButtonColors {
-    border: Color,
-    bg: Color,
-    bg_hover: Color,
-    bg_clicked: Color,
 }
 
 impl<'a> Button<'a> {

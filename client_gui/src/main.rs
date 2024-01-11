@@ -4,7 +4,7 @@ mod gui;
 mod types;
 
 use commands::{check_error, connect_cmd, disconnect_cmd};
-use gui::components::{Button, ButtonVariant, MouseEventObserver, MouseObserver};
+use gui::components::{ErrorCard, MouseEventObserver, MouseObserver};
 use gui::window::{CreateLobbyWindow, GameWindow, SettingsWindow};
 use types::{GameState, GameStateShared, RcCell};
 
@@ -20,7 +20,7 @@ thread_local! {
 
 use events::{EventLoop, UIEvent, Window};
 use sfml::graphics::{
-    Color, RcFont, RenderTarget, RenderWindow, Sprite, TextStyle, Texture, Transformable,
+    Color, RcFont, RenderTarget, RenderWindow, Sprite, Texture, Transformable,
 };
 use sfml::window::{mouse, Style, VideoMode};
 
@@ -73,14 +73,12 @@ fn main() {
             .into(),
     );
 
-    let bg_texture = Texture::from_file("./client_gui/assets/bg.png").unwrap();
+    let bg_texture = Texture::from_file("./assets/bg.png").unwrap();
     let mut bg = Sprite::with_texture(&bg_texture);
     bg.set_position((0.0, 0.0));
 
-    let font =
-        RcFont::from_file("./client_gui/assets/montserrat-regular.ttf").expect("cannot load font");
-    let _bold_font =
-        RcFont::from_file("./client_gui/assets/montserrat-bold.ttf").expect("cannot load font");
+    let font = RcFont::from_file("./assets/montserrat-regular.ttf").expect("cannot load font");
+    let _bold_font = RcFont::from_file("./assets/montserrat-bold.ttf").expect("cannot load font");
 
     let start_window = StartWindow::new(
         Window::Start,
@@ -140,14 +138,9 @@ fn main() {
                     err_queue.push_back(format!("Error: {err}"));
 
                     if current_err.is_none() {
-                        current_err = Some(rc_cell!(Button::builder()
-                            .set_bounds(10.0, 710.0, 400.0, 80.0)
-                            .set_border(2.0)
-                            .set_colors(ButtonVariant::Red)
-                            .set_text(&err_queue.pop_front().unwrap())
-                            .set_font_size(16)
-                            .set_font_style(TextStyle::REGULAR)
-                            .set_center_text(false)
+                        current_err = Some(rc_cell!(ErrorCard::builder()
+                            .set_bounds(10.0, WINDOW_SIZE - 10.0, 400.0)
+                            .set_error(&err_queue.pop_front().unwrap())
                             .build(0, Window::Global, event_loop.sender.clone(), &font)));
 
                         global_mouse_observer.add_observer(current_err.as_ref().unwrap().clone());
@@ -159,6 +152,16 @@ fn main() {
                             global_mouse_observer
                                 .remove_observer(current_err.as_ref().unwrap().borrow().get_id());
                             current_err = None;
+
+                            if let Some(err) = err_queue.pop_front() {
+                                current_err = Some(rc_cell!(ErrorCard::builder()
+                                    .set_bounds(10.0, WINDOW_SIZE - 10.0, 400.0)
+                                    .set_error(&err)
+                                    .build(0, Window::Global, event_loop.sender.clone(), &font)));
+
+                                global_mouse_observer
+                                    .add_observer(current_err.as_ref().unwrap().clone());
+                            }
                         }
                     }
                     Window::Start => match event_data.id {

@@ -7,13 +7,14 @@ use crate::{
     gui::components::Fixed,
 };
 
-use super::{ActiveInput, InputColors, InputState};
+use super::{ActiveInput, InputColors, InputState, InputBuilder};
 
 pub struct InactiveInput<'a> {
     pub event_data: EventData,
     pub bounds: FloatRect,
     pub bg: RectangleShape<'a>,
     pub side_bg: [RectangleShape<'a>; 2],
+    pub border: f32,
     pub colors: InputColors,
 
     pub range: (usize, usize),
@@ -25,16 +26,13 @@ pub struct InactiveInput<'a> {
 }
 
 impl<'a> InactiveInput<'a> {
-    const LEFT_PADDING: f32 = 16.0;
-    const TOP_PADDING: f32 = 10.0;
-    const BORDER: f32 = 2.0;
-
     pub fn from(from: ActiveInput<'a>) -> InactiveInput<'a> {
         InactiveInput {
             event_data: from.event_data,
             bounds: from.bounds,
             bg: from.bg,
             side_bg: from.side_bg,
+            border: from.border,
             colors: from.colors,
             range: from.range,
             value: from.value,
@@ -87,15 +85,15 @@ impl InputState for InactiveInput<'static> {
         if self.value.is_empty() {
             self.text.set_string(&self.placeholder);
             self.text.set_position((
-                self.bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
-                self.bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,
+                self.bounds.left + self.border + InputBuilder::LEFT_PADDING,
+                self.bounds.top + self.border + InputBuilder::TOP_PADDING,
             ));
             self.copy_text.set_string(&self.placeholder);
         } else {
             self.text.set_string(&self.value);
             self.text.set_position((
-                self.bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
-                self.bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,
+                self.bounds.left + self.border + InputBuilder::LEFT_PADDING,
+                self.bounds.top + self.border + InputBuilder::TOP_PADDING,
             ));
             self.new_range();
         }

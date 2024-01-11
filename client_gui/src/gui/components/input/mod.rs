@@ -75,15 +75,15 @@ impl InputBuilder {
         self
     }
 
-    pub fn build<'a>(
+    pub fn build(
         self,
         id: u32,
         window: Window,
         sender: mpsc::Sender<UIEvent>,
-        font: &'a RcFont,
+        font: &RcFont,
     ) -> Input {
-        let font_size = self.font_size.unwrap_or(20);
-        let border = self.border.unwrap_or(4.0);
+        let font_size = self.font_size.unwrap_or(16);
+        let border = self.border.unwrap_or(2.0);
         let mut bounds =
             self.bounds
                 .unwrap_or(FloatRect::new(0.0, 0.0, InputBuilder::INPUT_WIDTH, 0.0));
@@ -142,6 +142,7 @@ impl InputBuilder {
                 bounds,
                 bg,
                 side_bg,
+                border,
                 colors,
                 range: (0, 0),
                 value,

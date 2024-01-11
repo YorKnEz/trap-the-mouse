@@ -41,6 +41,15 @@ impl<'a> CreateLobbyWindow<'a> {
         let x = WINDOW_SIZE / 2.0 - BUTTON_WIDTH / 2.0;
         let mut y = WINDOW_SIZE / 2.0 - BUTTON_HEIGHT;
 
+        let input = Input::builder()
+            .set_bounds(x, y, BUTTON_WIDTH)
+            .set_font_size(20)
+            .set_placeholder("Lobby name")
+            .build(0, window, sender.clone(), font);
+
+        let height = input.bounds().height;
+        y += height + PADDING;
+
         let mut buttons = vec![];
         let texts = ["Create lobby", "Back"];
 
@@ -64,11 +73,7 @@ impl<'a> CreateLobbyWindow<'a> {
             settings: RefCell::new(Settings {
                 name: String::from(DEFAULT_NAME),
             }),
-            input: rc_cell!(Input::builder()
-                .set_bounds(x, y, BUTTON_WIDTH)
-                .set_font_size(20)
-                .set_placeholder("Lobby name")
-                .build(0, window, sender.clone(), font)),
+            input: rc_cell!(input),
             buttons,
             mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
             sender,

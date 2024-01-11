@@ -11,13 +11,14 @@ use crate::{
     gui::components::Fixed,
 };
 
-use super::{InactiveInput, InputColors, InputState};
+use super::{InactiveInput, InputBuilder, InputColors, InputState};
 
 pub struct ActiveInput<'a> {
     pub event_data: EventData,
     pub bounds: FloatRect,
     pub bg: RectangleShape<'a>,
     pub side_bg: [RectangleShape<'a>; 2],
+    pub border: f32,
     pub colors: InputColors,
 
     pub range: (usize, usize),
@@ -33,21 +34,15 @@ pub struct ActiveInput<'a> {
 }
 
 impl<'a> ActiveInput<'a> {
-    const LEFT_PADDING: f32 = 16.0;
-    const TOP_PADDING: f32 = 10.0;
-    const BORDER: f32 = 2.0;
     const MAX_LEN: usize = 256;
 
     pub fn from(from: InactiveInput<'a>) -> ActiveInput<'a> {
         let cursor_pos = from.value.len();
         let mut cursor = RectangleShape::new();
-        cursor.set_size((
-            1.0,
-            from.text.character_size() as f32 + 2.0 * ActiveInput::BORDER,
-        ));
+        cursor.set_size((1.0, from.text.character_size() as f32 + 2.0 * from.border));
         cursor.set_position((
             from.text.find_character_pos(cursor_pos).x,
-            from.bounds.top + ActiveInput::BORDER + ActiveInput::TOP_PADDING,
+            from.bounds.top + from.border + InputBuilder::TOP_PADDING,
         ));
         cursor.set_fill_color(from.colors.cursor);
 
@@ -56,6 +51,7 @@ impl<'a> ActiveInput<'a> {
             bounds: from.bounds,
             bg: from.bg,
             side_bg: from.side_bg,
+            border: from.border,
             colors: from.colors,
             range: from.range,
             value: from.value,
@@ -199,7 +195,9 @@ impl InputState for ActiveInput<'static> {
                 _ => {}
             },
             Event::Sfml(sfml::window::Event::TextEntered { unicode }) => {
-                if !(unicode.is_ascii_alphanumeric() || unicode.is_ascii_punctuation())
+                if !(unicode.is_ascii_alphanumeric()
+                    || unicode.is_ascii_punctuation()
+                    || unicode == ' ')
                     || self.value.len() >= ActiveInput::MAX_LEN
                 {
                     return self;
@@ -243,15 +241,15 @@ impl InputState for ActiveInput<'static> {
         if self.value.is_empty() {
             self.text.set_string(&self.placeholder);
             self.text.set_position((
-                self.bounds.left + ActiveInput::BORDER + ActiveInput::LEFT_PADDING,
-                self.bounds.top + ActiveInput::BORDER + ActiveInput::TOP_PADDING,
+                self.bounds.left + self.border + InputBuilder::LEFT_PADDING,
+                self.bounds.top + self.border + InputBuilder::TOP_PADDING,
             ));
             self.copy_text.set_string(&self.placeholder);
         } else {
             self.text.set_string(&self.value);
             self.text.set_position((
-                self.bounds.left + ActiveInput::BORDER + ActiveInput::LEFT_PADDING,
-                self.bounds.top + ActiveInput::BORDER + ActiveInput::TOP_PADDING,
+                self.bounds.left + self.border + InputBuilder::LEFT_PADDING,
+                self.bounds.top + self.border + InputBuilder::TOP_PADDING,
             ));
             while self.cursor_pos < self.value.len() {
                 self.move_cursor_right();

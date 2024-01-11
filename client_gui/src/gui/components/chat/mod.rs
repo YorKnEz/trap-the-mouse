@@ -100,7 +100,9 @@ impl<'a> Chat<'a> {
             author,
             text,
             self.font
-        )))
+        )));
+
+        self.messages.scroll_to(9999.0);
     }
 
     pub fn get_message(&mut self) -> String {
