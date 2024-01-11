@@ -10,7 +10,7 @@ use crate::{
     types::{Player, UserType},
 };
 
-use super::{Clickable, EventHandlerMut, Fixed};
+use super::{EventHandlerMut, Fixed, MouseEventObserver};
 
 pub struct PlayerCard<'a> {
     event_data: PlayerCardEventData,
@@ -27,7 +27,9 @@ pub struct PlayerCard<'a> {
 impl<'a> PlayerCard<'a> {
     const LEFT_PADDING: f32 = 10.0;
     const TOP_PADDING: f32 = 4.0;
+
     const COLOR_NOT_SELECTED: Color = Color::rgb(97, 97, 97);
+    const COLOR_HOVERED: Color = Color::rgb(107, 107, 107);
     const COLOR_SELECTED: Color = Color::rgb(117, 117, 117);
 
     const HOST_COLOR: Color = Color::rgb(235, 64, 52);
@@ -144,19 +146,16 @@ impl<'a> EventHandlerMut for PlayerCard<'a> {
     fn handle_event(&mut self, _e: Event) {}
 }
 
-impl<'a> Clickable for PlayerCard<'a> {
+impl<'a> MouseEventObserver for PlayerCard<'a> {
     fn get_id(&self) -> u32 {
         self.event_data.id
     }
 
-    fn click(&mut self, _x: u32, _y: u32) {
-        self.selected = !self.selected;
+    fn before_click(&mut self, _x: u32, _y: u32) {}
 
-        if self.selected {
-            self.bg.set_fill_color(PlayerCard::COLOR_SELECTED);
-        } else {
-            self.bg.set_fill_color(PlayerCard::COLOR_NOT_SELECTED);
-        }
+    fn click(&mut self, _x: u32, _y: u32) {
+        self.selected = true;
+        self.bg.set_fill_color(PlayerCard::COLOR_SELECTED);
 
         if let Err(e) = self
             .sender
@@ -169,13 +168,18 @@ impl<'a> Clickable for PlayerCard<'a> {
     fn no_click(&mut self) {
         self.selected = false;
         self.bg.set_fill_color(PlayerCard::COLOR_NOT_SELECTED);
+    }
 
-        // if let Err(e) = self
-        //     .sender
-        //     .send(UIEvent::PlayerCardNoClicked(self.event_data.clone()))
-        // {
-        //     println!("send error: {e:?}");
-        // }
+    fn hover(&mut self, _x: u32, _y: u32) {
+        if !self.selected {
+            self.bg.set_fill_color(PlayerCard::COLOR_HOVERED);
+        }
+    }
+
+    fn no_hover(&mut self) {
+        if !self.selected {
+            self.bg.set_fill_color(PlayerCard::COLOR_NOT_SELECTED);
+        }
     }
 }
 

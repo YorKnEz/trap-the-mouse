@@ -8,7 +8,7 @@ use sfml::{
 use super::WindowState;
 use crate::{
     events::{Event, UIEvent, Window},
-    gui::components::{Button, Clicker, EventHandler},
+    gui::components::{Button, MouseObserver, EventHandler, ButtonVariant},
     rc_cell,
     types::RcCell,
     BUTTON_HEIGHT, BUTTON_WIDTH, PADDING, WINDOW_SIZE,
@@ -18,7 +18,7 @@ pub struct StartWindow<'a> {
     // window: Window,
     // state: GameStateShared,
     buttons: Vec<RcCell<Button<'a>>>,
-    clicker: Clicker<'a>,
+    mouse_observer: MouseObserver<'a>,
 }
 
 impl<'a> StartWindow<'a> {
@@ -43,7 +43,8 @@ impl<'a> StartWindow<'a> {
                 FloatRect::new(x, y + i as f32 * offset, BUTTON_WIDTH, BUTTON_HEIGHT),
                 texts[i as usize - 1],
                 font,
-                sender.clone()
+                sender.clone(),
+                ButtonVariant::Green,
             )));
         }
 
@@ -51,13 +52,13 @@ impl<'a> StartWindow<'a> {
             // window,
             // state,
             buttons,
-            clicker: Clicker::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
+            mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
         }
     }
 
     pub fn init(&self) {
         for button in &self.buttons {
-            self.clicker.add_clickable(button.clone());
+            self.mouse_observer.add_observer(button.clone());
         }
     }
 }
@@ -78,10 +79,21 @@ impl<'a> WindowState for StartWindow<'a> {
 
 impl<'a> EventHandler for StartWindow<'a> {
     fn handle_event(&self, e: Event) {
-        if let Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) = e {
-            if button == mouse::Button::Left {
-                self.clicker.click(x, y);
+        match e {
+            Event::Sfml(sfml::window::Event::MouseButtonPressed { button, x, y }) => {
+                if button == mouse::Button::Left {
+                    self.mouse_observer.before_click(x, y);
+                }
             }
+            Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
+                if button == mouse::Button::Left {
+                    self.mouse_observer.click(x, y);
+                }
+            }
+            Event::Sfml(sfml::window::Event::MouseMoved { x, y }) => {
+                self.mouse_observer.hover(x, y);
+            }
+            _ => {}
         }
     }
 }

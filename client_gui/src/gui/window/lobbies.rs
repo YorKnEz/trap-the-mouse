@@ -10,7 +10,9 @@ use crate::{
     commands::{check_error, get_lobbies_cmd, get_lobby_state},
     events::{Event, UIEvent, Window},
     gui::components::Fixed,
-    gui::components::{Button, Clicker, EventHandler, EventHandlerMut, LobbyCard, Scrollable},
+    gui::components::{
+        Button, ButtonVariant, EventHandler, EventHandlerMut, LobbyCard, MouseObserver, Scrollable,
+    },
     rc_cell,
     types::{GameStateShared, LobbyAddr, LobbyShort, LobbyVec, RcCell},
     BUTTON_HEIGHT, BUTTON_WIDTH, PADDING, WINDOW_SIZE,
@@ -28,7 +30,7 @@ pub struct LobbiesWindow<'a> {
     search: RcCell<Button<'a>>,
     join_lobby: RcCell<Button<'a>>,
     back: RcCell<Button<'a>>,
-    clicker: Clicker<'a>,
+    mouse_observer: MouseObserver<'a>,
     lobbies_scrollable: RcCell<Scrollable<'a, LobbyCard<'a>>>,
     font: &'a RcFont,
 }
@@ -55,6 +57,7 @@ impl<'a> LobbiesWindow<'a> {
                 "S",
                 font,
                 sender.clone(),
+                ButtonVariant::Green,
             )),
             join_lobby: rc_cell!(Button::new(
                 2,
@@ -68,6 +71,7 @@ impl<'a> LobbiesWindow<'a> {
                 "Join Lobby",
                 font,
                 sender.clone(),
+                ButtonVariant::Green,
             )),
             back: rc_cell!(Button::new(
                 3,
@@ -81,8 +85,9 @@ impl<'a> LobbiesWindow<'a> {
                 "Back",
                 font,
                 sender.clone(),
+                ButtonVariant::Green,
             )),
-            clicker: Clicker::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
+            mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
             lobbies_scrollable: rc_cell!(Scrollable::new(
                 4,
                 window,
@@ -94,10 +99,10 @@ impl<'a> LobbiesWindow<'a> {
     }
 
     pub fn init(&self) {
-        self.clicker.add_clickable(self.search.clone());
-        self.clicker.add_clickable(self.join_lobby.clone());
-        self.clicker.add_clickable(self.back.clone());
-        self.clicker.add_clickable(self.lobbies_scrollable.clone());
+        self.mouse_observer.add_observer(self.search.clone());
+        self.mouse_observer.add_observer(self.join_lobby.clone());
+        self.mouse_observer.add_observer(self.back.clone());
+        self.mouse_observer.add_observer(self.lobbies_scrollable.clone());
     }
 
     fn search(&self) -> Result<()> {
@@ -205,10 +210,18 @@ impl<'a> WindowState for LobbiesWindow<'a> {
 impl<'a> EventHandler for LobbiesWindow<'a> {
     fn handle_event(&self, e: Event) {
         match e.clone() {
+            Event::Sfml(sfml::window::Event::MouseButtonPressed { button, x, y }) => {
+                if button == mouse::Button::Left {
+                    self.mouse_observer.before_click(x, y);
+                }
+            }
             Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {
-                    self.clicker.click(x, y);
+                    self.mouse_observer.click(x, y);
                 }
+            }
+            Event::Sfml(sfml::window::Event::MouseMoved { x, y }) => {
+                self.mouse_observer.hover(x, y);
             }
             Event::UI(UIEvent::ButtonClicked(event_data)) if event_data.window == self.window => {
                 match event_data.id {

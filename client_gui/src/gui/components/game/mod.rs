@@ -15,7 +15,7 @@ use crate::{
 
 use self::tile::Tile;
 
-use super::{Clickable, Fixed};
+use super::{Fixed, MouseEventObserver};
 
 pub struct Game {
     event_data: EventData,
@@ -133,16 +133,21 @@ impl Game {
     }
 }
 
-impl Clickable for Game {
+impl MouseEventObserver for Game {
     fn get_id(&self) -> u32 {
         self.event_data.id
     }
+
+    fn before_click(&mut self, _x: u32, _y: u32) {}
 
     fn click(&mut self, x: u32, y: u32) {
         Game::click(self, x, y);
     }
 
     fn no_click(&mut self) {}
+
+    fn hover(&mut self, _x: u32, _y: u32) {}
+    fn no_hover(&mut self) {}
 }
 
 impl Fixed for Game {

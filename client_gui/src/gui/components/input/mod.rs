@@ -9,7 +9,7 @@ use active_input::ActiveInput;
 use inactive_input::InactiveInput;
 use sfml::graphics::{Drawable, FloatRect, RcFont};
 
-use super::{Clickable, EventHandlerMut, Fixed};
+use super::{EventHandlerMut, Fixed, MouseEventObserver};
 
 pub trait InputState: Fixed {
     fn handle_event(self: Box<Self>, e: Event) -> Box<dyn InputState>;
@@ -75,10 +75,12 @@ impl EventHandlerMut for Input {
     }
 }
 
-impl Clickable for Input {
+impl MouseEventObserver for Input {
     fn get_id(&self) -> u32 {
         self.event_data.id
     }
+
+    fn before_click(&mut self, _x: u32, _y: u32) {}
 
     fn click(&mut self, _x: u32, _y: u32) {
         if let Err(e) = self.sender.send(UIEvent::InputClicked(self.event_data)) {
@@ -91,6 +93,9 @@ impl Clickable for Input {
             println!("send error: {e:?}");
         }
     }
+
+    fn hover(&mut self, _x: u32, _y: u32) {}
+    fn no_hover(&mut self) {}
 }
 
 impl Fixed for Input {

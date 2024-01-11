@@ -8,7 +8,7 @@ use sfml::{
 use crate::{
     commands::{change_name_cmd, check_error},
     events::{Event, UIEvent, Window},
-    gui::components::{Button, Clicker, EventHandler, EventHandlerMut, Input},
+    gui::components::{Button, MouseObserver, EventHandler, EventHandlerMut, Input, ButtonVariant},
     rc_cell,
     types::{GameStateShared, RcCell},
     BUTTON_HEIGHT, BUTTON_WIDTH, DEFAULT_NAME, PADDING, WINDOW_SIZE,
@@ -27,7 +27,7 @@ pub struct SettingsWindow<'a> {
 
     input: RcCell<Input>,
     buttons: Vec<RcCell<Button<'a>>>,
-    clicker: Clicker<'a>,
+    mouse_observer: MouseObserver<'a>,
 }
 
 impl<'a> SettingsWindow<'a> {
@@ -52,7 +52,8 @@ impl<'a> SettingsWindow<'a> {
                 FloatRect::new(x, y + i as f32 * offset, BUTTON_WIDTH, BUTTON_HEIGHT),
                 texts[i as usize - 1],
                 font,
-                sender.clone()
+                sender.clone(),
+                ButtonVariant::Green,
             )));
         }
 
@@ -72,14 +73,14 @@ impl<'a> SettingsWindow<'a> {
                 sender.clone(),
             )),
             buttons,
-            clicker: Clicker::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
+            mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
         }
     }
 
     pub fn init(&self) {
-        self.clicker.add_clickable(self.input.clone());
+        self.mouse_observer.add_observer(self.input.clone());
         for button in &self.buttons {
-            self.clicker.add_clickable(button.clone());
+            self.mouse_observer.add_observer(button.clone());
         }
     }
 }
@@ -112,10 +113,18 @@ impl<'a> EventHandler for SettingsWindow<'a> {
         self.input.borrow_mut().handle_event(e.clone());
 
         match e {
+            Event::Sfml(sfml::window::Event::MouseButtonPressed { button, x, y }) => {
+                if button == mouse::Button::Left {
+                    self.mouse_observer.before_click(x, y);
+                }
+            }
             Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {
-                    self.clicker.click(x, y);
+                    self.mouse_observer.click(x, y);
                 }
+            }
+            Event::Sfml(sfml::window::Event::MouseMoved { x, y }) => {
+                self.mouse_observer.hover(x, y);
             }
             Event::UI(UIEvent::InputChanged { value }) => {
                 let mut settings = self.settings.borrow_mut();

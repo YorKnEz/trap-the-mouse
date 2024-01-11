@@ -9,7 +9,7 @@ use sfml::{
 
 use crate::events::{EventData, UIEvent, Window};
 
-use super::{clicker::Clickable, Fixed};
+use super::{Fixed, MouseEventObserver};
 
 pub struct Button<'a> {
     event_data: EventData,
@@ -17,10 +17,37 @@ pub struct Button<'a> {
     bg: RectangleShape<'a>,
     text: RcText,
     sender: mpsc::Sender<UIEvent>,
+    selected: bool,
+    colors: ButtonColors,
+}
+
+#[derive(PartialEq)]
+pub enum ButtonVariant {
+    Green,
+    Red,
+}
+
+struct ButtonColors {
+    border: Color,
+    bg: Color,
+    bg_hover: Color,
+    bg_clicked: Color,
 }
 
 impl<'a> Button<'a> {
     const BORDER: f32 = 4.0;
+    const GREEN_BUTTON: ButtonColors = ButtonColors {
+        border: Color::rgb(45, 168, 78),
+        bg: Color::rgb(53, 232, 101),
+        bg_hover: Color::rgb(71, 235, 115),
+        bg_clicked: Color::rgb(90, 237, 129),
+    };
+    const RED_BUTTON: ButtonColors = ButtonColors {
+        border: Color::rgb(168, 45, 45),
+        bg: Color::rgb(232, 53, 53),
+        bg_hover: Color::rgb(235, 71, 71),
+        bg_clicked: Color::rgb(237, 90, 90),
+    };
 
     pub fn new(
         id: u32,
@@ -29,6 +56,7 @@ impl<'a> Button<'a> {
         text: &str,
         font: &RcFont,
         sender: mpsc::Sender<UIEvent>,
+        variant: ButtonVariant,
     ) -> Button<'a> {
         let mut bg = RectangleShape::new();
         bg.set_size(Vector2f::new(
@@ -36,10 +64,15 @@ impl<'a> Button<'a> {
             bounds.height - 2.0 * Button::BORDER,
         ));
         bg.set_position((bounds.left + Button::BORDER, bounds.top + Button::BORDER));
-        bg.set_fill_color(Color::rgb(53, 232, 101));
-
         bg.set_outline_thickness(Button::BORDER);
-        bg.set_outline_color(Color::rgb(45, 168, 78));
+
+        let colors = match variant {
+            ButtonVariant::Red => Button::RED_BUTTON,
+            ButtonVariant::Green => Button::GREEN_BUTTON,
+        };
+
+        bg.set_fill_color(colors.bg);
+        bg.set_outline_color(colors.border);
 
         let mut text = RcText::new(text, font, 20);
         text.set_style(TextStyle::BOLD);
@@ -57,6 +90,8 @@ impl<'a> Button<'a> {
             bg,
             text,
             sender,
+            selected: false,
+            colors,
         }
     }
 }
@@ -92,18 +127,41 @@ impl<'a> Fixed for Button<'a> {
     }
 }
 
-impl<'a> Clickable for Button<'a> {
+impl<'a> MouseEventObserver for Button<'a> {
     fn get_id(&self) -> u32 {
         self.event_data.id
+    }
+
+    fn before_click(&mut self, _x: u32, _y: u32) {
+        self.selected = true;
+        self.bg.set_fill_color(self.colors.bg_clicked);
     }
 
     fn click(&mut self, _x: u32, _y: u32) {
         if let Err(e) = self.sender.send(UIEvent::ButtonClicked(self.event_data)) {
             println!("send error: {e:?}");
         }
+
+        self.selected = false;
+        self.bg.set_fill_color(self.colors.bg);
     }
 
-    fn no_click(&mut self) {}
+    fn no_click(&mut self) {
+        self.selected = false;
+        self.bg.set_fill_color(self.colors.bg);
+    }
+
+    fn hover(&mut self, _x: u32, _y: u32) {
+        if !self.selected {
+            self.bg.set_fill_color(self.colors.bg_hover);
+        }
+    }
+
+    fn no_hover(&mut self) {
+        if !self.selected {
+            self.bg.set_fill_color(self.colors.bg);
+        }
+    }
 }
 
 impl<'a> Drawable for Button<'a> {

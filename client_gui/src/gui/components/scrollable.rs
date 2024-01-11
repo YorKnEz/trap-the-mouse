@@ -13,7 +13,7 @@ use crate::{
     WINDOW_SIZE,
 };
 
-use super::{Clickable, EventHandlerMut, Fixed, Scrollbar};
+use super::{EventHandlerMut, Fixed, MouseEventObserver, Scrollbar};
 
 /// Component that retains a list of T and renders them in a scrollable environment
 pub struct Scrollable<'a, T> {
@@ -24,10 +24,7 @@ pub struct Scrollable<'a, T> {
     list: Vec<RcCell<T>>,
 }
 
-impl<'a, T> Scrollable<'a, T>
-where
-    T: Fixed,
-{
+impl<'a, T: Fixed> Scrollable<'a, T> {
     pub const PADDING: f32 = 10.0;
     pub const SCROLLBAR_WIDTH: f32 = 20.0;
 
@@ -188,12 +185,43 @@ where
             top += pos.height + Scrollable::<'a, T>::PADDING;
         }
     }
+
+    fn propagate_event<F: Fn(&mut T), G: Fn(&mut T)>(
+        &mut self,
+        x: u32,
+        y: u32,
+        event: F,
+        no_event: G,
+    ) {
+        for item in &mut self.list {
+            let mut item = item.borrow_mut();
+            let bounds = item.bounds();
+
+            if bounds.top + bounds.height < self.bounds.top {
+                no_event(&mut item);
+                continue;
+            }
+
+            if bounds.top > self.bounds.top + self.bounds.height {
+                no_event(&mut item);
+                continue;
+            }
+
+            // the item is on the screen, check if it has been clicked
+            if bounds.left <= x as f32
+                && x as f32 <= bounds.left + bounds.width
+                && bounds.top <= y as f32
+                && y as f32 <= bounds.top + bounds.height
+            {
+                event(&mut item);
+            } else {
+                no_event(&mut item);
+            }
+        }
+    }
 }
 
-impl<'a, T> EventHandlerMut for Scrollable<'a, T>
-where
-    T: Fixed + EventHandlerMut,
-{
+impl<'a, T: Fixed + EventHandlerMut> EventHandlerMut for Scrollable<'a, T> {
     fn handle_event(&mut self, e: Event) {
         match e.clone() {
             Event::Sfml(sfml::window::Event::MouseWheelScrolled {
@@ -224,43 +252,19 @@ where
     }
 }
 
-// implement clickable trait for scrollables that have clickabels in order to let the scrollable decide which object is clicked
-// we use a raw check instead of using the clicker structure because a scrollable object often updates which would cause a lot of buffer updates on the clickable
-impl<'a, T> Clickable for Scrollable<'a, T>
-where
-    T: Fixed + Clickable,
-{
+// implement MouseEventObserver trait for scrollables that have observers in order to let the scrollable decide which object gets the event
+// we use a raw check instead of using the MouseObserver structure because a scrollable object often updates which would cause a lot of buffer updates on the MouseObserver
+impl<'a, T: Fixed + MouseEventObserver> MouseEventObserver for Scrollable<'a, T> {
     fn get_id(&self) -> u32 {
         self.event_data.id
     }
 
+    fn before_click(&mut self, x: u32, y: u32) {
+        self.propagate_event(x, y, |item| item.before_click(x, y), |item| item.no_click());
+    }
+
     fn click(&mut self, x: u32, y: u32) {
-        // decide where if the user clicked on a visible component
-        for item in &mut self.list {
-            let mut item = item.borrow_mut();
-            let bounds = item.bounds();
-
-            if bounds.top + bounds.height < self.bounds.top {
-                item.no_click();
-                continue;
-            }
-
-            if bounds.top > self.bounds.top + self.bounds.height {
-                item.no_click();
-                continue;
-            }
-
-            // the item is on the screen, check if it has been clicked
-            if bounds.left <= x as f32
-                && x as f32 <= bounds.left + bounds.width
-                && bounds.top <= y as f32
-                && y as f32 <= bounds.top + bounds.height
-            {
-                item.click(x, y);
-            } else {
-                item.no_click();
-            }
-        }
+        self.propagate_event(x, y, |item| item.click(x, y), |item| item.no_click());
     }
 
     fn no_click(&mut self) {
@@ -270,12 +274,21 @@ where
             item.no_click();
         }
     }
+
+    fn hover(&mut self, x: u32, y: u32) {
+        self.propagate_event(x, y, |item| item.hover(x, y), |item| item.no_hover());
+    }
+
+    fn no_hover(&mut self) {
+        // delegate the no click event to all items
+        for item in &mut self.list {
+            let mut item = item.borrow_mut();
+            item.no_hover();
+        }
+    }
 }
 
-impl<'b, T> Fixed for Scrollable<'b, T>
-where
-    T: Fixed,
-{
+impl<'b, T: Fixed> Fixed for Scrollable<'b, T> {
     fn bounds(&self) -> FloatRect {
         self.bounds
     }
@@ -322,10 +335,7 @@ where
     }
 }
 
-impl<'b, T> Drawable for Scrollable<'b, T>
-where
-    T: Drawable + Fixed,
-{
+impl<'b, T: Drawable + Fixed> Drawable for Scrollable<'b, T> {
     fn draw<'a: 'shader, 'texture, 'shader, 'shader_texture>(
         &'a self,
         _target: &mut dyn RenderTarget,

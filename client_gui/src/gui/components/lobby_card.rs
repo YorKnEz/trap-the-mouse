@@ -10,7 +10,7 @@ use crate::{
     types::LobbyShort,
 };
 
-use super::{Clickable, EventHandlerMut, Fixed};
+use super::{EventHandlerMut, Fixed, MouseEventObserver};
 
 pub struct LobbyCard<'a> {
     event_data: LobbyCardEventData,
@@ -27,6 +27,7 @@ pub struct LobbyCard<'a> {
 impl<'a> LobbyCard<'a> {
     const PADDING: f32 = 10.0;
     const COLOR_NOT_SELECTED: Color = Color::rgb(97, 97, 97);
+    const COLOR_HOVERED: Color = Color::rgb(107, 107, 107);
     const COLOR_SELECTED: Color = Color::rgb(117, 117, 117);
 
     pub fn new(
@@ -132,19 +133,16 @@ impl<'a> EventHandlerMut for LobbyCard<'a> {
     fn handle_event(&mut self, _e: Event) {}
 }
 
-impl<'a> Clickable for LobbyCard<'a> {
+impl<'a> MouseEventObserver for LobbyCard<'a> {
     fn get_id(&self) -> u32 {
         self.event_data.id
     }
 
-    fn click(&mut self, _x: u32, _y: u32) {
-        self.selected = !self.selected;
+    fn before_click(&mut self, _x: u32, _y: u32) {}
 
-        if self.selected {
-            self.bg.set_fill_color(LobbyCard::COLOR_SELECTED);
-        } else {
-            self.bg.set_fill_color(LobbyCard::COLOR_NOT_SELECTED);
-        }
+    fn click(&mut self, _x: u32, _y: u32) {
+        self.selected = true;
+        self.bg.set_fill_color(LobbyCard::COLOR_SELECTED);
 
         if let Err(e) = self
             .sender
@@ -157,13 +155,18 @@ impl<'a> Clickable for LobbyCard<'a> {
     fn no_click(&mut self) {
         self.selected = false;
         self.bg.set_fill_color(LobbyCard::COLOR_NOT_SELECTED);
+    }
 
-        // if let Err(e) = self
-        //     .sender
-        //     .send(UIEvent::LobbyCardNoClicked(self.event_data.clone()))
-        // {
-        //     println!("send error: {e:?}");
-        // }
+    fn hover(&mut self, _x: u32, _y: u32) {
+        if !self.selected {
+            self.bg.set_fill_color(LobbyCard::COLOR_HOVERED);
+        }
+    }
+
+    fn no_hover(&mut self) {
+        if !self.selected {
+            self.bg.set_fill_color(LobbyCard::COLOR_NOT_SELECTED);
+        }
     }
 }
 

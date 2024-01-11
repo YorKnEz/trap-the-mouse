@@ -14,8 +14,8 @@ use crate::{
     },
     events::{Event, NetworkEvent, UIEvent, Window},
     gui::components::{
-        game::Game, Button, Clickable, Clicker, EventHandler, EventHandlerMut, Fixed, PlayerCard,
-        Scrollable,
+        game::Game, Button, ButtonVariant, EventHandler, EventHandlerMut, Fixed,
+        MouseEventObserver, MouseObserver, PlayerCard, Scrollable,
     },
     rc_cell,
     types::{GameStateShared, Lobby, Player, RcCell, UserType},
@@ -36,7 +36,7 @@ pub struct GameWindow<'a> {
     show_buttons: RefCell<Vec<usize>>,
     players_scrollable: RcCell<Scrollable<'a, PlayerCard<'a>>>,
     game: RcCell<Game>,
-    clicker: Clicker<'a>,
+    mouse_observer: MouseObserver<'a>,
 }
 
 impl<'a> GameWindow<'a> {
@@ -72,6 +72,7 @@ impl<'a> GameWindow<'a> {
                 text,
                 font,
                 sender.clone(),
+                ButtonVariant::Green,
             )));
         }
 
@@ -112,14 +113,15 @@ impl<'a> GameWindow<'a> {
                 ),
                 sender.clone()
             )),
-            clicker: Clicker::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
+            mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
             font,
             sender,
         }
     }
 
     pub fn init(&self) {
-        self.clicker.add_clickable(self.players_scrollable.clone());
+        self.mouse_observer
+            .add_observer(self.players_scrollable.clone());
     }
 
     fn add_player(&self, player: Player) {
@@ -166,8 +168,8 @@ impl<'a> GameWindow<'a> {
 
         // remove old buttons
         for &i in show_buttons.iter() {
-            self.clicker
-                .remove_clickable(self.buttons[i].borrow().get_id());
+            self.mouse_observer
+                .remove_observer(self.buttons[i].borrow().get_id());
         }
 
         show_buttons.clear();
@@ -186,7 +188,7 @@ impl<'a> GameWindow<'a> {
             button
                 .borrow_mut()
                 .set_position(Vector2f::new(x, y + i as f32 * (PADDING + BUTTON_HEIGHT)));
-            self.clicker.add_clickable(button.clone());
+            self.mouse_observer.add_observer(button.clone());
         }
     }
 
@@ -294,10 +296,18 @@ impl<'a> EventHandler for GameWindow<'a> {
         }
 
         match e {
+            Event::Sfml(sfml::window::Event::MouseButtonPressed { button, x, y }) => {
+                if button == mouse::Button::Left {
+                    self.mouse_observer.before_click(x, y);
+                }
+            }
             Event::Sfml(sfml::window::Event::MouseButtonReleased { button, x, y }) => {
                 if button == mouse::Button::Left {
-                    self.clicker.click(x, y);
+                    self.mouse_observer.click(x, y);
                 }
+            }
+            Event::Sfml(sfml::window::Event::MouseMoved { x, y }) => {
+                self.mouse_observer.hover(x, y);
             }
             Event::UI(UIEvent::ButtonClicked(event_data)) if event_data.window == self.window => {
                 let mut state = self.state.borrow_mut();
@@ -370,7 +380,7 @@ impl<'a> EventHandler for GameWindow<'a> {
             }
             Event::Network(NetworkEvent::GameStarted(e)) => {
                 self.game.borrow_mut().start(e);
-                self.clicker.add_clickable(self.game.clone());
+                self.mouse_observer.add_observer(self.game.clone());
             }
             Event::Network(NetworkEvent::GameUpdated(e)) => {
                 let mut host = String::new();
@@ -393,12 +403,14 @@ impl<'a> EventHandler for GameWindow<'a> {
                     self.set_game_state(&format!(
                         "Player {host} won! Waiting for host to start a new game"
                     ));
-                    self.clicker.remove_clickable(self.game.borrow().get_id());
+                    self.mouse_observer
+                        .remove_observer(self.game.borrow().get_id());
                 } else if e.win.1 {
                     self.set_game_state(&format!(
                         "Player {player} won! Waiting for host to start a new game"
                     ));
-                    self.clicker.remove_clickable(self.game.borrow().get_id());
+                    self.mouse_observer
+                        .remove_observer(self.game.borrow().get_id());
                 }
 
                 self.game.borrow_mut().update(e);
