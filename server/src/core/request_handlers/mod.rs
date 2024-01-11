@@ -50,11 +50,15 @@ pub fn dispatch<S: Serialize, F: Fn(&mut UserInfo)>(
     cb: F,
 ) -> Result<(), ServerError> {
     let mut removed_users = vec![];
-    let mut replace_host = false;
+    let mut replace_host = true;
     let mut new_host = None;
 
     for user in users.iter_mut() {
         cb(user);
+
+        if user.user_type == UserType::Host {
+            replace_host = false;
+        }
 
         for event in &events {
             match request(user.addr, event.0, event.1) {
