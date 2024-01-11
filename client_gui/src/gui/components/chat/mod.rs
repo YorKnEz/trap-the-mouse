@@ -37,15 +37,11 @@ impl<'a> Chat<'a> {
         font: &'a RcFont,
         sender: mpsc::Sender<UIEvent>,
     ) -> Chat<'a> {
-        let mut input = Input::new(
-            input_id,
-            window,
-            FloatRect::new(bounds.left, 0.0, bounds.width - BUTTON_HEIGHT, 0.0),
-            16.0,
-            font,
-            "Your message",
-            sender.clone(),
-        );
+        let mut input = Input::builder()
+            .set_bounds(bounds.left, 0.0, bounds.width - BUTTON_HEIGHT)
+            .set_font_size(16)
+            .set_placeholder("Your message")
+            .build(input_id, window, sender.clone(), font);
         let input_bounds = input.bounds();
         input.set_position(Vector2f::new(
             bounds.left,

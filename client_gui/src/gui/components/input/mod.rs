@@ -7,7 +7,9 @@ use crate::events::{Event, EventData, UIEvent, Window};
 
 use active_input::ActiveInput;
 use inactive_input::InactiveInput;
-use sfml::graphics::{Drawable, FloatRect, RcFont};
+use sfml::graphics::{
+    Color, Drawable, FloatRect, RcFont, RcText, RectangleShape, Shape, Transformable,
+};
 
 use super::{EventHandlerMut, Fixed, MouseEventObserver};
 
@@ -18,6 +20,140 @@ pub trait InputState: Fixed {
     fn as_drawable(&self) -> &dyn Drawable;
 }
 
+pub struct InputColors {
+    border: Color,
+    bg: Color,
+    cursor: Color,
+    value: Color,
+    placeholder: Color,
+}
+
+pub struct InputBuilder {
+    bounds: Option<FloatRect>,
+    border: Option<f32>,
+    colors: Option<InputColors>,
+    placeholder: Option<String>,
+    value: Option<String>,
+    font_size: Option<u32>,
+}
+
+impl InputBuilder {
+    const INPUT_WIDTH: f32 = 240.0;
+    const LEFT_PADDING: f32 = 16.0;
+    const TOP_PADDING: f32 = 10.0;
+
+    const INPUT_COLORS: InputColors = InputColors {
+        border: Color::rgb(190, 190, 190),
+        bg: Color::rgb(238, 238, 238),
+        cursor: Color::BLACK,
+        value: Color::BLACK,
+        placeholder: Color::rgb(45, 45, 45),
+    };
+
+    pub fn set_bounds(mut self, left: f32, top: f32, width: f32) -> Self {
+        self.bounds = Some(FloatRect::new(left, top, width, 0.0));
+        self
+    }
+
+    // pub fn set_border(mut self, border: f32) -> Self {
+    //     self.border = Some(border);
+    //     self
+    // }
+
+    pub fn set_placeholder(mut self, placeholder: &str) -> Self {
+        self.placeholder = Some(String::from(placeholder));
+        self
+    }
+
+    // pub fn set_value(mut self, value: &str) -> Self {
+    //     self.value = Some(String::from(value));
+    //     self
+    // }
+
+    pub fn set_font_size(mut self, font_size: u32) -> Self {
+        self.font_size = Some(font_size);
+        self
+    }
+
+    pub fn build<'a>(
+        self,
+        id: u32,
+        window: Window,
+        sender: mpsc::Sender<UIEvent>,
+        font: &'a RcFont,
+    ) -> Input {
+        let font_size = self.font_size.unwrap_or(20);
+        let border = self.border.unwrap_or(4.0);
+        let mut bounds =
+            self.bounds
+                .unwrap_or(FloatRect::new(0.0, 0.0, InputBuilder::INPUT_WIDTH, 0.0));
+        bounds.height = font_size as f32 + 2.0 * InputBuilder::TOP_PADDING + 2.0 * border;
+        let colors = self.colors.unwrap_or(InputBuilder::INPUT_COLORS);
+        let placeholder = self.placeholder.unwrap_or("Type something".to_string());
+        let value = self.value.unwrap_or("".to_string());
+
+        let mut bg = RectangleShape::new();
+        bg.set_size((bounds.width - 2.0 * border, bounds.height - 2.0 * border));
+        bg.set_position((bounds.left + border, bounds.top + border));
+        bg.set_fill_color(colors.bg);
+
+        bg.set_outline_thickness(border);
+        bg.set_outline_color(colors.border);
+
+        let mut side_bg = RectangleShape::new();
+        side_bg.set_size((InputBuilder::LEFT_PADDING, bounds.height - 2.0 * border));
+        side_bg.set_position((bounds.left + border, bounds.top + border));
+        side_bg.set_fill_color(colors.bg);
+
+        let mut side_bg = [side_bg.clone(), side_bg];
+        side_bg[1].set_position((
+            bounds.left + bounds.width - border - InputBuilder::LEFT_PADDING,
+            bounds.top + border,
+        ));
+
+        let mut text = if value.is_empty() {
+            let mut text = RcText::new(&placeholder, font, font_size);
+            text.set_fill_color(colors.placeholder);
+            text
+        } else {
+            let mut text = RcText::new(&value, font, font_size);
+            text.set_fill_color(colors.value);
+            text
+        };
+
+        text.set_position((
+            bounds.left + border + InputBuilder::LEFT_PADDING,
+            bounds.top + border + InputBuilder::TOP_PADDING,
+        ));
+
+        let mut cursor = RectangleShape::new();
+        cursor.set_size((1.0, font_size as f32 + 2.0 * border));
+        cursor.set_position((
+            bounds.left + border + InputBuilder::LEFT_PADDING,
+            bounds.top + border + InputBuilder::TOP_PADDING,
+        ));
+        cursor.set_fill_color(colors.cursor);
+
+        Input {
+            event_data: EventData { window, id },
+            sender: sender.clone(),
+            state: Some(Box::new(InactiveInput {
+                event_data: EventData { window, id },
+                bounds,
+                bg,
+                side_bg,
+                colors,
+                range: (0, 0),
+                value,
+                placeholder,
+                copy_text: text.clone(),
+                text,
+                sender,
+            })),
+        }
+    }
+}
+
 pub struct Input {
     event_data: EventData,
     sender: mpsc::Sender<UIEvent>,
@@ -25,28 +161,14 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn new(
-        id: u32,
-        window: Window,
-        bounds: FloatRect,
-        text_height: f32,
-        font: &RcFont,
-        placeholder: &str,
-        sender: mpsc::Sender<UIEvent>,
-    ) -> Input {
-        Input {
-            event_data: EventData { window, id },
-            state: Some(Box::new(InactiveInput::new(
-                id,
-                window,
-                bounds,
-                text_height,
-                font,
-                "",
-                placeholder,
-                sender.clone(),
-            ))),
-            sender,
+    pub fn builder() -> InputBuilder {
+        InputBuilder {
+            bounds: None,
+            border: None,
+            colors: None,
+            placeholder: None,
+            value: None,
+            font_size: None,
         }
     }
 

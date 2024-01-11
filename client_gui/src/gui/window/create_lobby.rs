@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc, sync::mpsc};
 
 use sfml::{
-    graphics::{Drawable, FloatRect, RcFont},
+    graphics::{Drawable, RcFont},
     window::mouse,
 };
 
@@ -64,15 +64,11 @@ impl<'a> CreateLobbyWindow<'a> {
             settings: RefCell::new(Settings {
                 name: String::from(DEFAULT_NAME),
             }),
-            input: rc_cell!(Input::new(
-                0,
-                window,
-                FloatRect::new(x, y, BUTTON_WIDTH, 0.0),
-                20.0,
-                font,
-                "Lobby name",
-                sender.clone(),
-            )),
+            input: rc_cell!(Input::builder()
+                .set_bounds(x, y, BUTTON_WIDTH)
+                .set_font_size(20)
+                .set_placeholder("Lobby name")
+                .build(0, window, sender.clone(), font)),
             buttons,
             mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
             sender,

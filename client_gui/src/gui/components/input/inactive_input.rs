@@ -1,24 +1,23 @@
 use std::sync::mpsc;
 
-use sfml::graphics::{
-    Color, Drawable, FloatRect, RcFont, RcText, RectangleShape, Shape, Transformable,
-};
+use sfml::graphics::{Drawable, FloatRect, RcText, RectangleShape, Shape, Transformable};
 
 use crate::{
-    events::{Event, EventData, UIEvent, Window},
+    events::{Event, EventData, UIEvent},
     gui::components::Fixed,
 };
 
-use super::{ActiveInput, InputState};
+use super::{ActiveInput, InputColors, InputState};
 
 pub struct InactiveInput<'a> {
     pub event_data: EventData,
     pub bounds: FloatRect,
     pub bg: RectangleShape<'a>,
     pub side_bg: [RectangleShape<'a>; 2],
+    pub colors: InputColors,
 
     pub range: (usize, usize),
-    pub buf: String,
+    pub value: String,
     pub placeholder: String,
     pub copy_text: RcText,
     pub text: RcText,
@@ -30,94 +29,15 @@ impl<'a> InactiveInput<'a> {
     const TOP_PADDING: f32 = 10.0;
     const BORDER: f32 = 2.0;
 
-    pub fn new(
-        id: u32,
-        window: Window,
-        bounds: FloatRect,
-        text_height: f32,
-        font: &RcFont,
-        value: &str,
-        placeholder: &str,
-        sender: mpsc::Sender<UIEvent>,
-    ) -> InactiveInput<'a> {
-        let bounds = FloatRect {
-            height: text_height + 2.0 * InactiveInput::TOP_PADDING + 2.0 * InactiveInput::BORDER,
-            ..bounds
-        };
-
-        let mut bg = RectangleShape::new();
-        bg.set_size((
-            bounds.width - 2.0 * InactiveInput::BORDER,
-            bounds.height - 2.0 * InactiveInput::BORDER,
-        ));
-        bg.set_position((
-            bounds.left + InactiveInput::BORDER,
-            bounds.top + InactiveInput::BORDER,
-        ));
-        bg.set_fill_color(Color::rgb(238, 238, 238));
-
-        bg.set_outline_thickness(InactiveInput::BORDER);
-        bg.set_outline_color(Color::rgb(190, 190, 190));
-
-        let mut side_bg = RectangleShape::new();
-        side_bg.set_size((
-            InactiveInput::LEFT_PADDING,
-            bounds.height - 2.0 * InactiveInput::BORDER,
-        ));
-        side_bg.set_position((
-            bounds.left + InactiveInput::BORDER,
-            bounds.top + InactiveInput::BORDER,
-        ));
-        side_bg.set_fill_color(Color::rgb(238, 238, 238));
-
-        let mut side_bg = [side_bg.clone(), side_bg];
-        side_bg[1].set_position((
-            bounds.left + bounds.width - InactiveInput::BORDER - InactiveInput::LEFT_PADDING,
-            bounds.top + InactiveInput::BORDER,
-        ));
-
-        let mut text = if value.is_empty() {
-            RcText::new(placeholder, font, text_height as u32)
-        } else {
-            RcText::new(value, font, text_height as u32)
-        };
-
-        text.set_position((
-            bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
-            bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,
-        ));
-        text.set_fill_color(Color::rgb(45, 45, 45));
-
-        let mut cursor = RectangleShape::new();
-        cursor.set_size((1.0, text_height + 2.0 * InactiveInput::BORDER));
-        cursor.set_position((
-            bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
-            bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,
-        ));
-        cursor.set_fill_color(Color::BLACK);
-
-        InactiveInput {
-            event_data: EventData { window, id },
-            bounds,
-            bg,
-            side_bg,
-            range: (0, 0),
-            buf: String::from(value),
-            placeholder: String::from(placeholder),
-            copy_text: text.clone(),
-            text,
-            sender,
-        }
-    }
-
     pub fn from(from: ActiveInput<'a>) -> InactiveInput<'a> {
         InactiveInput {
             event_data: from.event_data,
             bounds: from.bounds,
             bg: from.bg,
             side_bg: from.side_bg,
+            colors: from.colors,
             range: from.range,
-            buf: from.buf,
+            value: from.value,
             placeholder: from.placeholder,
             copy_text: from.copy_text,
             text: from.text,
@@ -126,9 +46,9 @@ impl<'a> InactiveInput<'a> {
     }
 
     fn new_range(&mut self) {
-        self.range = (0, self.buf.len());
+        self.range = (0, self.value.len());
 
-        if !self.buf.is_empty() {
+        if !self.value.is_empty() {
             let left = self.side_bg[0].global_bounds();
             let limit = (left.left + left.width, self.side_bg[1].global_bounds().left);
 
@@ -142,7 +62,7 @@ impl<'a> InactiveInput<'a> {
         }
 
         self.copy_text
-            .set_string(&self.buf[self.range.0..self.range.1]);
+            .set_string(&self.value[self.range.0..self.range.1]);
         let pos = self.copy_text.position();
         self.copy_text
             .set_position((self.text.find_character_pos(self.range.0).x, pos.y));
@@ -159,12 +79,12 @@ impl InputState for InactiveInput<'static> {
     }
 
     fn get_value(&self) -> String {
-        self.buf.clone()
+        self.value.clone()
     }
 
     fn set_value(&mut self, value: String) {
-        self.buf = value;
-        if self.buf.is_empty() {
+        self.value = value;
+        if self.value.is_empty() {
             self.text.set_string(&self.placeholder);
             self.text.set_position((
                 self.bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
@@ -172,7 +92,7 @@ impl InputState for InactiveInput<'static> {
             ));
             self.copy_text.set_string(&self.placeholder);
         } else {
-            self.text.set_string(&self.buf);
+            self.text.set_string(&self.value);
             self.text.set_position((
                 self.bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
                 self.bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,

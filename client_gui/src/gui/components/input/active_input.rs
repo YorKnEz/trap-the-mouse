@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 
 use sfml::{
-    graphics::{Color, Drawable, FloatRect, RcText, RectangleShape, Shape, Transformable},
+    graphics::{Drawable, FloatRect, RcText, RectangleShape, Shape, Transformable},
     system::Vector2f,
     window::Key,
 };
@@ -11,16 +11,17 @@ use crate::{
     gui::components::Fixed,
 };
 
-use super::{InactiveInput, InputState};
+use super::{InactiveInput, InputColors, InputState};
 
 pub struct ActiveInput<'a> {
     pub event_data: EventData,
     pub bounds: FloatRect,
     pub bg: RectangleShape<'a>,
     pub side_bg: [RectangleShape<'a>; 2],
+    pub colors: InputColors,
 
     pub range: (usize, usize),
-    pub buf: String,
+    pub value: String,
     pub placeholder: String,
     pub copy_text: RcText,
     pub text: RcText,
@@ -38,7 +39,7 @@ impl<'a> ActiveInput<'a> {
     const MAX_LEN: usize = 256;
 
     pub fn from(from: InactiveInput<'a>) -> ActiveInput<'a> {
-        let cursor_pos = from.buf.len();
+        let cursor_pos = from.value.len();
         let mut cursor = RectangleShape::new();
         cursor.set_size((
             1.0,
@@ -48,15 +49,16 @@ impl<'a> ActiveInput<'a> {
             from.text.find_character_pos(cursor_pos).x,
             from.bounds.top + ActiveInput::BORDER + ActiveInput::TOP_PADDING,
         ));
-        cursor.set_fill_color(Color::BLACK);
+        cursor.set_fill_color(from.colors.cursor);
 
         ActiveInput {
             event_data: from.event_data,
             bounds: from.bounds,
             bg: from.bg,
             side_bg: from.side_bg,
+            colors: from.colors,
             range: from.range,
-            buf: from.buf,
+            value: from.value,
             placeholder: from.placeholder,
             copy_text: from.copy_text,
             text: from.text,
@@ -88,7 +90,7 @@ impl<'a> ActiveInput<'a> {
     }
 
     fn move_cursor_right(&mut self) {
-        if self.cursor_pos < self.buf.len() {
+        if self.cursor_pos < self.value.len() {
             self.cursor_pos += 1;
             let cursor_pos = self.cursor.position();
             let mut new_left = self.text.find_character_pos(self.cursor_pos).x;
@@ -107,7 +109,7 @@ impl<'a> ActiveInput<'a> {
     }
 
     fn shift(&mut self) {
-        let cursor = self.text.find_character_pos(self.buf.len()).x;
+        let cursor = self.text.find_character_pos(self.value.len()).x;
         let left = self.side_bg[0].global_bounds();
         let limit = (left.left + left.width, self.side_bg[1].global_bounds().left);
 
@@ -122,9 +124,9 @@ impl<'a> ActiveInput<'a> {
     }
 
     fn new_range(&mut self) {
-        self.range = (0, self.buf.len());
+        self.range = (0, self.value.len());
 
-        if !self.buf.is_empty() {
+        if !self.value.is_empty() {
             let left = self.side_bg[0].global_bounds();
             let limit = (left.left + left.width, self.side_bg[1].global_bounds().left);
 
@@ -138,7 +140,7 @@ impl<'a> ActiveInput<'a> {
         }
 
         self.copy_text
-            .set_string(&self.buf[self.range.0..self.range.1]);
+            .set_string(&self.value[self.range.0..self.range.1]);
         let pos = self.copy_text.position();
         self.copy_text
             .set_position((self.text.find_character_pos(self.range.0).x, pos.y));
@@ -160,12 +162,12 @@ impl InputState for ActiveInput<'static> {
                 system: _,
             }) => match code {
                 Key::Backspace => {
-                    if !(0 < self.cursor_pos && self.cursor_pos <= self.buf.len()) {
+                    if !(0 < self.cursor_pos && self.cursor_pos <= self.value.len()) {
                         return self;
                     }
 
-                    self.buf.remove(self.cursor_pos - 1);
-                    self.text.set_string(&self.buf);
+                    self.value.remove(self.cursor_pos - 1);
+                    self.text.set_string(&self.value);
                     self.move_cursor_left();
                     self.shift();
                     self.new_range();
@@ -175,14 +177,14 @@ impl InputState for ActiveInput<'static> {
                         .send(UIEvent::InputChanged(InputChangedEventData {
                             id: self.event_data.id,
                             window: self.event_data.window,
-                            data: self.buf.clone(),
+                            data: self.value.clone(),
                         }))
                     {
                         println!("send error: {e:?}");
                     }
 
                     if self.range.0 == self.range.1 {
-                        self.copy_text.set_fill_color(Color::rgb(45, 45, 45));
+                        self.copy_text.set_fill_color(self.colors.placeholder);
                         self.copy_text.set_string(&self.placeholder);
                     }
                 }
@@ -197,12 +199,14 @@ impl InputState for ActiveInput<'static> {
                 _ => {}
             },
             Event::Sfml(sfml::window::Event::TextEntered { unicode }) => {
-                if !(unicode.is_ascii_alphanumeric() || unicode.is_ascii_punctuation()) || self.buf.len() >= ActiveInput::MAX_LEN {
+                if !(unicode.is_ascii_alphanumeric() || unicode.is_ascii_punctuation())
+                    || self.value.len() >= ActiveInput::MAX_LEN
+                {
                     return self;
                 }
 
-                self.buf.insert(self.cursor_pos, unicode);
-                self.text.set_string(&self.buf);
+                self.value.insert(self.cursor_pos, unicode);
+                self.text.set_string(&self.value);
                 self.move_cursor_right();
                 self.new_range();
 
@@ -211,14 +215,14 @@ impl InputState for ActiveInput<'static> {
                     .send(UIEvent::InputChanged(InputChangedEventData {
                         id: self.event_data.id,
                         window: self.event_data.window,
-                        data: self.buf.clone(),
+                        data: self.value.clone(),
                     }))
                 {
                     println!("send error: {e:?}");
                 }
 
                 if self.range.0 < self.range.1 {
-                    self.copy_text.set_fill_color(Color::BLACK);
+                    self.copy_text.set_fill_color(self.colors.value);
                 }
             }
             _ => {}
@@ -228,15 +232,15 @@ impl InputState for ActiveInput<'static> {
     }
 
     fn get_value(&self) -> String {
-        self.buf.clone()
+        self.value.clone()
     }
 
     fn set_value(&mut self, value: String) {
-        self.buf = value;
+        self.value = value;
         while self.cursor_pos > 0 {
             self.move_cursor_left();
         }
-        if self.buf.is_empty() {
+        if self.value.is_empty() {
             self.text.set_string(&self.placeholder);
             self.text.set_position((
                 self.bounds.left + ActiveInput::BORDER + ActiveInput::LEFT_PADDING,
@@ -244,12 +248,12 @@ impl InputState for ActiveInput<'static> {
             ));
             self.copy_text.set_string(&self.placeholder);
         } else {
-            self.text.set_string(&self.buf);
+            self.text.set_string(&self.value);
             self.text.set_position((
                 self.bounds.left + ActiveInput::BORDER + ActiveInput::LEFT_PADDING,
                 self.bounds.top + ActiveInput::BORDER + ActiveInput::TOP_PADDING,
             ));
-            while self.cursor_pos < self.buf.len() {
+            while self.cursor_pos < self.value.len() {
                 self.move_cursor_right();
             }
             self.new_range();
