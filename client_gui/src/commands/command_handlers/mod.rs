@@ -13,6 +13,7 @@ mod leave_lobby;
 mod become_role;
 mod change_name;
 mod make_host;
+mod send_message;
 
 mod make_move;
 mod start_game;
@@ -32,6 +33,7 @@ pub use leave_lobby::leave_lobby_cmd;
 pub use become_role::become_role_cmd;
 pub use change_name::change_name_cmd;
 pub use make_host::make_host_cmd;
+pub use send_message::send_message_cmd;
 
 pub use make_move::make_move_cmd;
 pub use start_game::start_game_cmd;

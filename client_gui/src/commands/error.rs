@@ -10,6 +10,8 @@ pub enum CommandError {
     AlreadyConnected,
     #[error("you are not connected to a lobby")]
     NotConnected,
+    #[error("empty string")]
+    EmptyString
 }
 
 pub fn check_error(e: CommandError) -> String {
