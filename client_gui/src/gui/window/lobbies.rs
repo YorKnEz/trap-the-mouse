@@ -92,6 +92,7 @@ impl<'a> LobbiesWindow<'a> {
                 4,
                 window,
                 FloatRect::new(WINDOW_SIZE / 2.0 - 300.0, 40.0, 600.0, 600.0),
+                10.0,
             )),
             font,
             sender,
@@ -187,7 +188,7 @@ impl<'a> LobbiesWindow<'a> {
                     0.0,
                     bounds.width
                         - Scrollable::<LobbyCard>::SCROLLBAR_WIDTH
-                        - 2.0 * Scrollable::<LobbyCard>::PADDING,
+                        - 2.0 * lobbies_scrollable.padding,
                     60.0
                 ),
                 self.font,

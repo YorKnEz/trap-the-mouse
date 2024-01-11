@@ -10,11 +10,11 @@ use sfml::{
 use crate::{
     commands::{
         become_role_cmd, check_error, close_lobby_cmd, join_lobby_cmd, leave_lobby_cmd,
-        make_host_cmd, make_move_cmd, start_game_cmd,
+        make_host_cmd, make_move_cmd, send_message_cmd, start_game_cmd,
     },
     events::{Event, NetworkEvent, UIEvent, Window},
     gui::components::{
-        game::Game, Button, ButtonVariant, EventHandler, EventHandlerMut, Fixed,
+        game::Game, Button, ButtonVariant, Chat, EventHandler, EventHandlerMut, Fixed,
         MouseEventObserver, MouseObserver, PlayerCard, Scrollable,
     },
     rc_cell,
@@ -36,6 +36,7 @@ pub struct GameWindow<'a> {
     show_buttons: RefCell<Vec<usize>>,
     players_scrollable: RcCell<Scrollable<'a, PlayerCard<'a>>>,
     game: RcCell<Game>,
+    chat: RcCell<Chat<'a>>,
     mouse_observer: MouseObserver<'a>,
 }
 
@@ -101,6 +102,7 @@ impl<'a> GameWindow<'a> {
                     240.0,
                     WINDOW_SIZE - (GameWindow::GAME_HEIGHT + 3.0 * PADDING)
                 ),
+                10.0,
             )),
             game: rc_cell!(Game::new(
                 7,
@@ -113,6 +115,20 @@ impl<'a> GameWindow<'a> {
                 ),
                 sender.clone()
             )),
+            chat: rc_cell!(Chat::new(
+                8,
+                9,
+                10,
+                Window::Game,
+                FloatRect::new(
+                    WINDOW_SIZE - 10.0 - GameWindow::GAME_WIDTH,
+                    GameWindow::GAME_HEIGHT + 2.0 * PADDING,
+                    GameWindow::GAME_WIDTH - 2.0 * PADDING - 240.0,
+                    WINDOW_SIZE - (GameWindow::GAME_HEIGHT + 3.0 * PADDING)
+                ),
+                font,
+                sender.clone(),
+            )),
             mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
             font,
             sender,
@@ -122,6 +138,7 @@ impl<'a> GameWindow<'a> {
     pub fn init(&self) {
         self.mouse_observer
             .add_observer(self.players_scrollable.clone());
+        self.chat.borrow().register_observers(&self.mouse_observer);
     }
 
     fn add_player(&self, player: Player) {
@@ -140,7 +157,7 @@ impl<'a> GameWindow<'a> {
                 0.0,
                 bounds.width
                     - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
-                    - 2.0 * Scrollable::<PlayerCard>::PADDING,
+                    - 2.0 * players_scrollable.padding,
                 60.0
             ),
             self.font,
@@ -261,7 +278,7 @@ impl<'a> WindowState for GameWindow<'a> {
                     0.0,
                     bounds.width
                         - Scrollable::<PlayerCard>::SCROLLBAR_WIDTH
-                        - 2.0 * Scrollable::<PlayerCard>::PADDING,
+                        - 2.0 * players_scrollable.padding,
                     60.0
                 ),
                 self.font,
@@ -297,6 +314,7 @@ impl<'a> EventHandler for GameWindow<'a> {
     fn handle_event(&self, e: Event) {
         {
             self.players_scrollable.borrow_mut().handle_event(e.clone());
+            self.chat.borrow_mut().handle_event(e.clone());
         }
 
         match e {
@@ -361,6 +379,18 @@ impl<'a> EventHandler for GameWindow<'a> {
                             }
                         }
                     },
+                    8 => match send_message_cmd(
+                        &state.id,
+                        self.chat.borrow_mut().get_message(),
+                        &state.lobby,
+                    ) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                                println!("send error: {e:?}");
+                            }
+                        }
+                    },
                     _ => {}
                 }
             }
@@ -369,8 +399,6 @@ impl<'a> EventHandler for GameWindow<'a> {
             {
                 *self.selected_player.borrow_mut() = Some(event_data.data);
             }
-            // Event::UI(UIEvent::PlayerCardNoClicked(event_data))
-            //     if event_data.window == self.window => {}
             Event::UI(UIEvent::GameMove(e)) => {
                 let state = self.state.borrow();
                 match make_move_cmd(&state.id, (e.x, e.y), &state.lobby) {
@@ -468,5 +496,7 @@ impl<'a> Drawable for GameWindow<'a> {
         if !self.game.borrow().began {
             target.draw(&*self.game_state.borrow());
         }
+
+        target.draw(&*self.chat.borrow());
     }
 }

@@ -22,13 +22,13 @@ pub struct Scrollable<'a, T> {
     scrollbar: Scrollbar<'a>,
     bg: RectangleShape<'a>,
     list: Vec<RcCell<T>>,
+    pub padding: f32,
 }
 
 impl<'a, T: Fixed> Scrollable<'a, T> {
-    pub const PADDING: f32 = 10.0;
     pub const SCROLLBAR_WIDTH: f32 = 20.0;
 
-    pub fn new(id: u32, window: Window, bounds: FloatRect) -> Scrollable<'a, T> {
+    pub fn new(id: u32, window: Window, bounds: FloatRect, padding: f32) -> Scrollable<'a, T> {
         let scrollbar = Scrollbar::new(
             FloatRect::new(
                 bounds.left + bounds.width - Scrollable::<T>::SCROLLBAR_WIDTH,
@@ -50,6 +50,7 @@ impl<'a, T: Fixed> Scrollable<'a, T> {
             scrollbar,
             bg,
             list: vec![],
+            padding,
         }
     }
 
@@ -63,18 +64,18 @@ impl<'a, T: Fixed> Scrollable<'a, T> {
             if let Some(last_item) = self.list.last_mut() {
                 let last_item = last_item.borrow_mut();
                 self.scrollbar
-                    .resize_with(pos.height + Scrollable::<T>::PADDING);
+                    .resize_with(pos.height + self.padding);
                 let last_pos = last_item.bounds();
                 item_inner.set_position(Vector2f::new(
-                    self.bounds.left + Scrollable::<T>::PADDING,
-                    last_pos.top + last_pos.height + Scrollable::<T>::PADDING,
+                    self.bounds.left + self.padding,
+                    last_pos.top + last_pos.height + self.padding,
                 ));
             } else {
                 self.scrollbar
-                    .resize_with(pos.height + 2.0 * Scrollable::<T>::PADDING);
+                    .resize_with(pos.height + 2.0 * self.padding);
                 item_inner.set_position(Vector2f::new(
-                    self.bounds.left + Scrollable::<T>::PADDING,
-                    self.bounds.top + Scrollable::<T>::PADDING,
+                    self.bounds.left + self.padding,
+                    self.bounds.top + self.padding,
                 ));
             }
 
@@ -87,11 +88,11 @@ impl<'a, T: Fixed> Scrollable<'a, T> {
     pub fn remove(&mut self, index: usize) -> RcCell<T> {
         let rem_item = self.list.remove(index);
         let rem_bounds = rem_item.borrow().bounds();
-        let rem = rem_bounds.height + Scrollable::<T>::PADDING;
+        let rem = rem_bounds.height + self.padding;
 
         if self.list.is_empty() {
             self.scrollbar
-                .resize_with(-(rem + Scrollable::<T>::PADDING));
+                .resize_with(-(rem + self.padding));
             return rem_item;
         }
 
@@ -100,7 +101,7 @@ impl<'a, T: Fixed> Scrollable<'a, T> {
         // if the removed item is above the view bring the items above it down
         let (range, shift, scroll_offset) =
             // 0.01 because floats are funny and sizes are big so 0.01 is really small in comparison
-            if rem_bounds.top + rem_bounds.height < self.bounds.top + Scrollable::<T>::PADDING - 0.01 {
+            if rem_bounds.top + rem_bounds.height < self.bounds.top + self.padding - 0.01 {
                 // if there are no items to bring down we need to move the whole view
                 (0..index, rem, shift)
             }
@@ -112,7 +113,7 @@ impl<'a, T: Fixed> Scrollable<'a, T> {
 
                 // between the last item and the scrollable there is free space
                 if last.top + shift + last.height
-                    < self.bounds.top + self.bounds.height - Scrollable::<T>::PADDING
+                    < self.bounds.top + self.bounds.height - self.padding
                 {
                     // we need to shift the whole view by the minimum of the distance between last and scrollable end or first and scrollable start
 
@@ -132,9 +133,9 @@ impl<'a, T: Fixed> Scrollable<'a, T> {
                     let first = self.list.first().unwrap().borrow().bounds(); // we know list is not empty by this point
 
                     let shift = (self.bounds.top + self.bounds.height
-                        - Scrollable::<T>::PADDING
+                        - self.padding
                         - (last.top + shift + last.height))
-                        .min((self.bounds.top + Scrollable::<T>::PADDING - first.top).max(0.0));
+                        .min((self.bounds.top + self.padding - first.top).max(0.0));
 
                     (0..self.list.len(), shift, shift)
                 } else {
@@ -176,13 +177,13 @@ impl<'a, T: Fixed> Scrollable<'a, T> {
 
     pub fn scroll_to(&mut self, offset: f32) {
         let offset = self.scrollbar.scroll_to(offset);
-        let mut top = self.bounds.top + Scrollable::<'a, T>::PADDING;
+        let mut top = self.bounds.top + self.padding;
         for item in &mut self.list {
             let mut item = item.borrow_mut();
             let pos = item.bounds();
             item.set_position(Vector2f::new(pos.left, top - offset));
 
-            top += pos.height + Scrollable::<'a, T>::PADDING;
+            top += pos.height + self.padding;
         }
     }
 
