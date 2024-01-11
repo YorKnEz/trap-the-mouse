@@ -113,17 +113,13 @@ impl MakeMoveRequest {
             self.user_move
         };
 
+        let path = game.find_path();
+
         let update = GameUpdate {
-            win: (game.devil_won(), game.angel_won()),
+            win: (path.is_none(), game.angel_won()),
             turn: game.turn,
             user_move,
         };
-
-        game.turn = !game.turn;
-
-        if update.win.0 || update.win.1 {
-            *game_state = None;
-        }
 
         let mut users = self.users.lock().unwrap();
 
@@ -132,6 +128,45 @@ impl MakeMoveRequest {
         {
             let mut running = self.running.lock().unwrap();
             *running = false;
+        }
+
+        game.turn = !game.turn;
+
+        if update.win.0 || update.win.1 {
+            *game_state = None;
+            return Ok(());
+        }
+
+        // angel computer move
+        if !game.turn && game.angel == 0 {
+            let update = if let Some(next_move) = path {
+                game.angel_pos = next_move;
+
+                GameUpdate {
+                    win: (false, game.angel_won()),
+                    turn: game.turn,
+                    user_move: game.angel_pos,
+                }
+            } else {
+                GameUpdate {
+                    win: (true, false),
+                    turn: game.turn,
+                    user_move: game.angel_pos,
+                }
+            };
+
+            if let Err(ServerError::InternalShutDown) =
+                dispatch(&mut users, vec![(Type::GameUpdated, &update)], |_| {})
+            {
+                let mut running = self.running.lock().unwrap();
+                *running = false;
+            }
+
+            game.turn = !game.turn;
+
+            if update.win.0 || update.win.1 {
+                *game_state = None;
+            }
         }
 
         Ok(())

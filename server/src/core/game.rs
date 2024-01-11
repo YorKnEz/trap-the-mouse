@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use serde_derive::Serialize;
 
 pub const GRID_SIZE: usize = 11;
@@ -43,7 +45,7 @@ impl GameState {
             devil,
             angel,
             angel_pos,
-            turn: false,
+            turn: true,
             grid,
         }
     }
@@ -79,36 +81,71 @@ impl GameState {
         pos.0 == 0 || pos.0 == GRID_SIZE as i32 - 1 || pos.1 == 0 || pos.1 == GRID_SIZE as i32 - 1
     }
 
-    pub fn devil_won(&self) -> bool {
-        let mut visited = [[false; GRID_SIZE]; GRID_SIZE];
+    pub fn find_path(&self) -> Option<(i32, i32)> {
+        let mut pos = self.angel_pos;
+        let mut q = VecDeque::new();
+        let mut len = [[0; GRID_SIZE]; GRID_SIZE];
 
-        !self.border_reachable(self.angel_pos, &mut visited)
-    }
+        let mut path = Vec::new();
 
-    fn border_reachable(
-        &self,
-        pos: (i32, i32),
-        visited: &mut [[bool; GRID_SIZE]; GRID_SIZE],
-    ) -> bool {
-        visited[pos.0 as usize][pos.1 as usize] = true;
+        q.push_back(pos);
+        len[pos.0 as usize][pos.1 as usize] = 1;
 
-        if self.reached_border(pos) && !self.grid[pos.0 as usize][pos.1 as usize] {
-            return true;
-        }
+        while let Some(pos) = q.pop_front() {
+            if self.reached_border(pos) {
+                path.push(pos);
+                break;
+            }
 
-        let mut res = false;
+            // try random directions
+            let mut offsets = Vec::from(GameState::D[(pos.0 % 2) as usize]);
 
-        for off in GameState::D[(pos.0 % 2) as usize] {
-            let new_pos = (pos.0 + off.0, pos.1 + off.1);
-            // check if new_pos is in bounds, not blocked and not visited
-            if self.contains(new_pos)
-                && !self.grid[pos.0 as usize][pos.1 as usize]
-                && !visited[new_pos.0 as usize][new_pos.1 as usize]
-            {
-                res = res || self.border_reachable(new_pos, visited);
+            while !offsets.is_empty() {
+                let i = rand::random::<usize>() % offsets.len();
+                let off = offsets.remove(i);
+
+                let new_pos = (pos.0 + off.0, pos.1 + off.1);
+                // check if new_pos is in bounds, not blocked and not visited
+                if self.contains(new_pos)
+                    && !self.grid[new_pos.0 as usize][new_pos.1 as usize]
+                    && len[new_pos.0 as usize][new_pos.1 as usize] == 0
+                {
+                    q.push_back(new_pos);
+                    len[new_pos.0 as usize][new_pos.1 as usize] =
+                        len[pos.0 as usize][pos.1 as usize] + 1;
+                }
             }
         }
 
-        res
+        if path.is_empty() {
+            return None;
+        }
+
+        let mut found = false;
+        pos = *path.last().unwrap();
+
+        while pos != self.angel_pos {
+            for off in GameState::D[(pos.0 % 2) as usize] {
+                let new_pos = (pos.0 + off.0, pos.1 + off.1);
+                // check if new_pos is in bounds, not blocked and not visited
+                if self.contains(new_pos)
+                    && !self.grid[new_pos.0 as usize][new_pos.1 as usize]
+                    && len[pos.0 as usize][pos.1 as usize]
+                        == len[new_pos.0 as usize][new_pos.1 as usize] + 1
+                {
+                    path.push(new_pos);
+                    found = true;
+                    break;
+                }
+            }
+
+            if !found {
+                return None;
+            }
+
+            pos = *path.last().unwrap();
+        }
+
+        Some(path[path.len() - 2])
     }
 }
