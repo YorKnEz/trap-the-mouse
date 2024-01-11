@@ -8,7 +8,7 @@ use sfml::{
 use crate::{
     commands::{check_error, create_lobby_cmd},
     events::{Event, UIEvent, Window},
-    gui::components::{Button, MouseObserver, EventHandler, EventHandlerMut, Input, ButtonVariant},
+    gui::components::{Button, ButtonVariant, EventHandler, EventHandlerMut, Input, MouseObserver},
     rc_cell,
     types::{GameStateShared, LobbyShort, RcCell},
     BUTTON_HEIGHT, BUTTON_WIDTH, DEFAULT_NAME, PADDING, WINDOW_SIZE,
@@ -125,12 +125,12 @@ impl<'a> EventHandler for CreateLobbyWindow<'a> {
             Event::Sfml(sfml::window::Event::MouseMoved { x, y }) => {
                 self.mouse_observer.hover(x, y);
             }
-            Event::UI(UIEvent::InputChanged { value }) => {
+            Event::UI(UIEvent::InputChanged(e)) if e.window == self.window => {
                 let mut settings = self.settings.borrow_mut();
-                settings.name = value.clone();
+                settings.name = e.data;
             }
-            Event::UI(UIEvent::ButtonClicked(event_data)) if event_data.window == self.window => {
-                if event_data.id == 1 {
+            Event::UI(UIEvent::ButtonClicked(e)) if e.window == self.window => {
+                if e.id == 1 {
                     'create: {
                         let mut state = self.state.borrow_mut();
                         let settings = self.settings.borrow();

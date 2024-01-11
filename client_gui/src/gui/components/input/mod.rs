@@ -37,6 +37,8 @@ impl Input {
         Input {
             event_data: EventData { window, id },
             state: Some(Box::new(InactiveInput::new(
+                id,
+                window,
                 bounds,
                 text_height,
                 font,

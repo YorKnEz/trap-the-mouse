@@ -7,13 +7,14 @@ use sfml::{
 };
 
 use crate::{
-    events::{Event, UIEvent},
+    events::{Event, EventData, InputChangedEventData, UIEvent},
     gui::components::Fixed,
 };
 
 use super::{InactiveInput, InputState};
 
 pub struct ActiveInput<'a> {
+    pub event_data: EventData,
     pub bounds: FloatRect,
     pub bg: RectangleShape<'a>,
     pub side_bg: [RectangleShape<'a>; 2],
@@ -31,9 +32,10 @@ pub struct ActiveInput<'a> {
 }
 
 impl<'a> ActiveInput<'a> {
+    const LEFT_PADDING: f32 = 16.0;
     const TOP_PADDING: f32 = 10.0;
-    const MAX_LEN: usize = 256;
     const BORDER: f32 = 2.0;
+    const MAX_LEN: usize = 256;
 
     pub fn from(from: InactiveInput<'a>) -> ActiveInput<'a> {
         let cursor_pos = from.buf.len();
@@ -49,6 +51,7 @@ impl<'a> ActiveInput<'a> {
         cursor.set_fill_color(Color::BLACK);
 
         ActiveInput {
+            event_data: from.event_data,
             bounds: from.bounds,
             bg: from.bg,
             side_bg: from.side_bg,
@@ -167,9 +170,14 @@ impl InputState for ActiveInput<'static> {
                     self.shift();
                     self.new_range();
 
-                    if let Err(e) = self.sender.send(UIEvent::InputChanged {
-                        value: self.buf.clone(),
-                    }) {
+                    if let Err(e) = self
+                        .sender
+                        .send(UIEvent::InputChanged(InputChangedEventData {
+                            id: self.event_data.id,
+                            window: self.event_data.window,
+                            data: self.buf.clone(),
+                        }))
+                    {
                         println!("send error: {e:?}");
                     }
 
@@ -189,7 +197,7 @@ impl InputState for ActiveInput<'static> {
                 _ => {}
             },
             Event::Sfml(sfml::window::Event::TextEntered { unicode }) => {
-                if !unicode.is_alphanumeric() || self.buf.len() >= ActiveInput::MAX_LEN {
+                if !(unicode.is_ascii_alphanumeric() || unicode.is_ascii_punctuation()) || self.buf.len() >= ActiveInput::MAX_LEN {
                     return self;
                 }
 
@@ -198,9 +206,14 @@ impl InputState for ActiveInput<'static> {
                 self.move_cursor_right();
                 self.new_range();
 
-                if let Err(e) = self.sender.send(UIEvent::InputChanged {
-                    value: self.buf.clone(),
-                }) {
+                if let Err(e) = self
+                    .sender
+                    .send(UIEvent::InputChanged(InputChangedEventData {
+                        id: self.event_data.id,
+                        window: self.event_data.window,
+                        data: self.buf.clone(),
+                    }))
+                {
                     println!("send error: {e:?}");
                 }
 
@@ -225,9 +238,17 @@ impl InputState for ActiveInput<'static> {
         }
         if self.buf.is_empty() {
             self.text.set_string(&self.placeholder);
+            self.text.set_position((
+                self.bounds.left + ActiveInput::BORDER + ActiveInput::LEFT_PADDING,
+                self.bounds.top + ActiveInput::BORDER + ActiveInput::TOP_PADDING,
+            ));
             self.copy_text.set_string(&self.placeholder);
         } else {
             self.text.set_string(&self.buf);
+            self.text.set_position((
+                self.bounds.left + ActiveInput::BORDER + ActiveInput::LEFT_PADDING,
+                self.bounds.top + ActiveInput::BORDER + ActiveInput::TOP_PADDING,
+            ));
             while self.cursor_pos < self.buf.len() {
                 self.move_cursor_right();
             }

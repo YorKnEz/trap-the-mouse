@@ -5,13 +5,14 @@ use sfml::graphics::{
 };
 
 use crate::{
-    events::{Event, UIEvent},
+    events::{Event, EventData, UIEvent, Window},
     gui::components::Fixed,
 };
 
 use super::{ActiveInput, InputState};
 
 pub struct InactiveInput<'a> {
+    pub event_data: EventData,
     pub bounds: FloatRect,
     pub bg: RectangleShape<'a>,
     pub side_bg: [RectangleShape<'a>; 2],
@@ -30,6 +31,8 @@ impl<'a> InactiveInput<'a> {
     const BORDER: f32 = 2.0;
 
     pub fn new(
+        id: u32,
+        window: Window,
         bounds: FloatRect,
         text_height: f32,
         font: &RcFont,
@@ -94,6 +97,7 @@ impl<'a> InactiveInput<'a> {
         cursor.set_fill_color(Color::BLACK);
 
         InactiveInput {
+            event_data: EventData { window, id },
             bounds,
             bg,
             side_bg,
@@ -108,6 +112,7 @@ impl<'a> InactiveInput<'a> {
 
     pub fn from(from: ActiveInput<'a>) -> InactiveInput<'a> {
         InactiveInput {
+            event_data: from.event_data,
             bounds: from.bounds,
             bg: from.bg,
             side_bg: from.side_bg,
@@ -161,9 +166,17 @@ impl InputState for InactiveInput<'static> {
         self.buf = value;
         if self.buf.is_empty() {
             self.text.set_string(&self.placeholder);
+            self.text.set_position((
+                self.bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
+                self.bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,
+            ));
             self.copy_text.set_string(&self.placeholder);
         } else {
             self.text.set_string(&self.buf);
+            self.text.set_position((
+                self.bounds.left + InactiveInput::BORDER + InactiveInput::LEFT_PADDING,
+                self.bounds.top + InactiveInput::BORDER + InactiveInput::TOP_PADDING,
+            ));
             self.new_range();
         }
     }
