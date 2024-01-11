@@ -24,6 +24,7 @@ pub struct CreateLobbyWindow<'a> {
     window: Window,
     state: GameStateShared,
     settings: RefCell<Settings>,
+    sender: mpsc::Sender<UIEvent>,
 
     input: RcCell<Input>,
     buttons: Vec<RcCell<Button<'a>>>,
@@ -74,6 +75,7 @@ impl<'a> CreateLobbyWindow<'a> {
             )),
             buttons,
             mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
+            sender,
         }
     }
 
@@ -140,7 +142,9 @@ impl<'a> EventHandler for CreateLobbyWindow<'a> {
                                 players: 0,
                             },
                             Err(e) => {
-                                check_error(e);
+                                if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                                    println!("send error: {e:?}");
+                                }
                                 break 'create;
                             }
                         };

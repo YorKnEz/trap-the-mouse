@@ -24,6 +24,7 @@ pub enum NetworkEvent {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Window {
+    Global,
     Start,
     Settings,
     Lobbies,
@@ -49,4 +50,5 @@ pub enum UIEvent {
     PlayerCardClicked(PlayerCardEventData),
     // PlayerCardNoClicked(PlayerCardEventData),
     GameMove(GameMoveEventData),
+    Error(String),
 }

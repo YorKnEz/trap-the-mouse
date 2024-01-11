@@ -102,7 +102,8 @@ impl<'a> LobbiesWindow<'a> {
         self.mouse_observer.add_observer(self.search.clone());
         self.mouse_observer.add_observer(self.join_lobby.clone());
         self.mouse_observer.add_observer(self.back.clone());
-        self.mouse_observer.add_observer(self.lobbies_scrollable.clone());
+        self.mouse_observer
+            .add_observer(self.lobbies_scrollable.clone());
     }
 
     fn search(&self) -> Result<()> {
@@ -111,7 +112,9 @@ impl<'a> LobbiesWindow<'a> {
         let new_lobbies = match get_lobbies_cmd(&state.id, self.range.0, self.range.1) {
             Ok(lobbies) => lobbies,
             Err(e) => {
-                check_error(e);
+                if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                    println!("send error: {e:?}");
+                }
                 return Err(anyhow!("get lobbies"));
             }
         };
@@ -137,7 +140,9 @@ impl<'a> LobbiesWindow<'a> {
                     players: lobby_state.players,
                 },
                 Err(e) => {
-                    check_error(e);
+                    if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                        println!("send error: {e:?}");
+                    }
                     lobbies.remove(index);
                     lobbies_scrollable.remove(index);
                     continue;
@@ -165,7 +170,9 @@ impl<'a> LobbiesWindow<'a> {
                     players: lobby_state.players,
                 },
                 Err(e) => {
-                    check_error(e);
+                    if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                        println!("send error: {e:?}");
+                    }
                     continue;
                 }
             };

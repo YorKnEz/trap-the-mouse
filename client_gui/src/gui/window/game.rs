@@ -231,7 +231,9 @@ impl<'a> WindowState for GameWindow<'a> {
                     });
                 }
                 Err(e) => {
-                    check_error(e);
+                    if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                        println!("send error: {e:?}");
+                    }
                     return Err(anyhow!("couldn't join"));
                 }
             }
@@ -279,7 +281,9 @@ impl<'a> WindowState for GameWindow<'a> {
                     self.players_scrollable.borrow_mut().clear();
                 }
                 Err(e) => {
-                    check_error(e);
+                    if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                        println!("send error: {e:?}");
+                    }
                     return Err(anyhow!("cannot leave lobby"));
                 }
             }
@@ -314,27 +318,48 @@ impl<'a> EventHandler for GameWindow<'a> {
                 match event_data.id {
                     0 => match start_game_cmd(&state.id, &state.lobby) {
                         Ok(_) => {}
-                        Err(e) => check_error(e),
+                        Err(e) => {
+                            if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                                println!("send error: {e:?}");
+                            }
+                        }
                     },
                     1 => {
                         if let Some(player) = self.selected_player.borrow().as_ref() {
                             match make_host_cmd(&state.id, player.id, &state.lobby) {
                                 Ok(_) => {}
-                                Err(e) => check_error(e),
+                                Err(e) => {
+                                    if let Err(e) = self.sender.send(UIEvent::Error(check_error(e)))
+                                    {
+                                        println!("send error: {e:?}");
+                                    }
+                                }
                             }
                         }
                     }
                     2 => match close_lobby_cmd(&state.id.clone(), &mut state.lobby) {
                         Ok(_) => {}
-                        Err(e) => check_error(e),
+                        Err(e) => {
+                            if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                                println!("send error: {e:?}");
+                            }
+                        }
                     },
                     3 => match become_role_cmd(&state.id, UserType::Spectator, &state.lobby) {
                         Ok(_) => {}
-                        Err(e) => check_error(e),
+                        Err(e) => {
+                            if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                                println!("send error: {e:?}");
+                            }
+                        }
                     },
                     4 => match become_role_cmd(&state.id, UserType::Player, &state.lobby) {
                         Ok(_) => {}
-                        Err(e) => check_error(e),
+                        Err(e) => {
+                            if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                                println!("send error: {e:?}");
+                            }
+                        }
                     },
                     _ => {}
                 }
@@ -350,7 +375,11 @@ impl<'a> EventHandler for GameWindow<'a> {
                 let state = self.state.borrow();
                 match make_move_cmd(&state.id, (e.x, e.y), &state.lobby) {
                     Ok(_) => {}
-                    Err(e) => check_error(e),
+                    Err(e) => {
+                        if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                            println!("send error: {e:?}");
+                        }
+                    }
                 }
             }
             Event::Network(NetworkEvent::PlayerJoined(e)) => {

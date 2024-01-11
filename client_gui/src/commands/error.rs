@@ -12,9 +12,15 @@ pub enum CommandError {
     NotConnected,
 }
 
-pub fn check_error(e: CommandError) {
+pub fn check_error(e: CommandError) -> String {
     match e {
-        CommandError::InternalAnyhow(e) => println!("cmd error: {e}"),
-        e => println!("cmd error: {e}"),
+        CommandError::InternalAnyhow(e) => {
+            println!("{e}");
+            e.to_string()
+        }
+        e => {
+            println!("{e}");
+            e.to_string()
+        }
     }
 }

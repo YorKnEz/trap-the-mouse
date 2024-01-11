@@ -4,10 +4,12 @@ mod gui;
 mod types;
 
 use commands::{check_error, connect_cmd, disconnect_cmd};
+use gui::components::{Button, ButtonVariant, MouseEventObserver, MouseObserver};
 use gui::window::{CreateLobbyWindow, GameWindow, SettingsWindow};
 use types::{GameState, GameStateShared, RcCell};
 
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::env::args;
 use std::net::SocketAddr;
 use std::rc::Rc;
@@ -17,8 +19,10 @@ thread_local! {
 }
 
 use events::{EventLoop, UIEvent, Window};
-use sfml::graphics::{Color, RcFont, RenderTarget, RenderWindow, Sprite, Texture, Transformable};
-use sfml::window::{Style, VideoMode};
+use sfml::graphics::{
+    Color, FloatRect, RcFont, RenderTarget, RenderWindow, Sprite, Texture, Transformable,
+};
+use sfml::window::{mouse, Style, VideoMode};
 
 use crate::events::{Event, NetworkEvent};
 use crate::gui::window::{LobbiesWindow, StartWindow, WindowState};
@@ -123,12 +127,40 @@ fn main() {
         }
     }
 
+    let mut err_queue = VecDeque::new();
+    let mut current_err = None;
+    let global_mouse_observer = MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32);
+
     while window.is_open() {
         while let Some(e) = event_loop.get_event() {
             current_window.borrow().handle_event(e.clone());
 
             match e.clone() {
+                Event::UI(UIEvent::Error(err)) => {
+                    err_queue.push_back(format!("Error: {err}"));
+
+                    if current_err.is_none() {
+                        current_err = Some(rc_cell!(Button::new(
+                            0,
+                            Window::Global,
+                            FloatRect::new(10.0, 710.0, 400.0, 80.0),
+                            &err_queue.pop_front().unwrap(),
+                            &font,
+                            event_loop.sender.clone(),
+                            ButtonVariant::Red,
+                        )));
+
+                        global_mouse_observer.add_observer(current_err.as_ref().unwrap().clone());
+                    }
+                }
                 Event::UI(UIEvent::ButtonClicked(event_data)) => match event_data.window {
+                    Window::Global => {
+                        if event_data.id == 0 {
+                            global_mouse_observer
+                                .remove_observer(current_err.as_ref().unwrap().borrow().get_id());
+                            current_err = None;
+                        }
+                    }
                     Window::Start => match event_data.id {
                         1 => switch_state(current_window.clone(), &create_lobby_window),
                         2 => switch_state(current_window.clone(), &lobbies_window),
@@ -167,8 +199,14 @@ fn main() {
         while let Some(e) = window.poll_event() {
             current_window.borrow().handle_event(Event::Sfml(e));
 
-            if e == sfml::window::Event::Closed {
-                window.close();
+            match e {
+                sfml::window::Event::Closed => window.close(),
+                sfml::window::Event::MouseButtonReleased { button, x, y } => {
+                    if button == mouse::Button::Left {
+                        global_mouse_observer.click(x, y);
+                    }
+                }
+                _ => {}
             }
         }
 
@@ -176,6 +214,10 @@ fn main() {
 
         window.draw(&bg);
         window.draw(current_window.borrow().as_drawable());
+
+        if current_err.is_some() {
+            window.draw(&*current_err.as_ref().unwrap().borrow());
+        }
 
         window.display();
     }

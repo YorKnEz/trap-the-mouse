@@ -13,7 +13,7 @@ use crate::{
     types::GRID_SIZE,
 };
 
-use self::tile::Tile;
+use tile::Tile;
 
 use super::{Fixed, MouseEventObserver};
 

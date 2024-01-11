@@ -8,7 +8,7 @@ use sfml::{
 use crate::{
     commands::{change_name_cmd, check_error},
     events::{Event, UIEvent, Window},
-    gui::components::{Button, MouseObserver, EventHandler, EventHandlerMut, Input, ButtonVariant},
+    gui::components::{Button, ButtonVariant, EventHandler, EventHandlerMut, Input, MouseObserver},
     rc_cell,
     types::{GameStateShared, RcCell},
     BUTTON_HEIGHT, BUTTON_WIDTH, DEFAULT_NAME, PADDING, WINDOW_SIZE,
@@ -24,6 +24,7 @@ pub struct SettingsWindow<'a> {
     window: Window,
     state: GameStateShared,
     settings: RefCell<Settings>,
+    sender: mpsc::Sender<UIEvent>,
 
     input: RcCell<Input>,
     buttons: Vec<RcCell<Button<'a>>>,
@@ -74,6 +75,7 @@ impl<'a> SettingsWindow<'a> {
             )),
             buttons,
             mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
+            sender,
         }
     }
 
@@ -138,7 +140,9 @@ impl<'a> EventHandler for SettingsWindow<'a> {
                         match change_name_cmd(&state.id, settings.name.clone(), &state.lobby) {
                             Ok(_) => println!("saved!"),
                             Err(e) => {
-                                check_error(e);
+                                if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
+                                    println!("send error: {e:?}");
+                                }
                                 break 'save;
                             }
                         }

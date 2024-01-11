@@ -85,7 +85,7 @@ where
 
     if res_type == Type::Error {
         return Err(anyhow!(format!(
-            "error: {:?}",
+            "{}",
             bincode::deserialize::<String>(&res)?
         )));
     }
