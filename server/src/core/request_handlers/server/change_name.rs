@@ -46,9 +46,9 @@ impl ChangeNameRequest {
             Err(e) => return Err(ServerError::InternalRusqlite(e)),
         };
 
-        if !(2 <= self.name.len() && self.name.len() < 256) {
+        if !(2 <= self.name.len() && self.name.len() <= 32) {
             return Err(ServerError::Api {
-                message: "username must be between 2 and 255 characters".to_string(),
+                message: "username must be between 2 and 32 characters".to_string(),
             });
         }
 
