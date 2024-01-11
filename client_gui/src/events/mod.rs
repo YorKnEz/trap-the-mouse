@@ -2,7 +2,7 @@ mod event_loop;
 mod event_types;
 
 pub use event_loop::EventLoop;
-pub use event_types::*;
+pub use event_types::{network::*, ui::*};
 
 /// Event loop events, includes SFML, Network and UI events
 #[derive(Clone, Debug)]
@@ -20,6 +20,7 @@ pub enum NetworkEvent {
     GameStarted(GameStartedEvent),
     GameUpdated(GameUpdatedEvent),
     LobbyClosing(LobbyClosingEvent),
+    Message(MessageEvent),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -44,7 +45,7 @@ pub enum UIEvent {
     ButtonClicked(EventData),
     InputClicked(EventData),
     InputNoClicked(EventData),
-    InputChanged { value: String },
+    InputChanged(InputChangedEventData),
     LobbyCardClicked(LobbyCardEventData),
     // LobbyCardNoClicked(LobbyCardEventData),
     PlayerCardClicked(PlayerCardEventData),

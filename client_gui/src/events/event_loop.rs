@@ -13,8 +13,8 @@ use network::{SendRecv, Type};
 use crate::types::{BoolMutex, EventQueue, EventQueueItem};
 
 use super::{
-    Event, GameStartedEvent, GameUpdatedEvent, LobbyClosingEvent, NetworkEvent, PlayerJoinedEvent,
-    PlayerLeftEvent, PlayerUpdatedEvent, UIEvent,
+    Event, GameStartedEvent, GameUpdatedEvent, LobbyClosingEvent, MessageEvent, NetworkEvent,
+    PlayerJoinedEvent, PlayerLeftEvent, PlayerUpdatedEvent, UIEvent,
 };
 
 pub struct EventLoop {
@@ -111,45 +111,31 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
                 let ev: Option<NetworkEvent> = match req_type {
                     Type::PlayerJoined => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::PlayerJoined(PlayerJoinedEvent::new(buf))),
-                        Err(e) => {
-                            println!("{e}");
-                            None
-                        }
+                        Err(_) => None,
                     },
                     Type::PlayerLeft => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::PlayerLeft(PlayerLeftEvent::new(buf))),
-                        Err(e) => {
-                            println!("{e}");
-                            None
-                        }
+                        Err(_) => None,
                     },
                     Type::PlayerUpdated => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::PlayerUpdated(PlayerUpdatedEvent::new(buf))),
-                        Err(e) => {
-                            println!("{e}");
-                            None
-                        }
+                        Err(_) => None,
                     },
                     Type::GameStarted => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::GameStarted(GameStartedEvent::new(buf))),
-                        Err(e) => {
-                            println!("{e}");
-                            None
-                        }
+                        Err(_) => None,
                     },
                     Type::GameUpdated => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::GameUpdated(GameUpdatedEvent::new(buf))),
-                        Err(e) => {
-                            println!("{e}");
-                            None
-                        }
+                        Err(_) => None,
                     },
                     Type::LobbyClosing => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::LobbyClosing(LobbyClosingEvent::new(buf))),
-                        Err(e) => {
-                            println!("{e}");
-                            None
-                        }
+                        Err(_) => None,
+                    },
+                    Type::Message => match bincode::deserialize(&buf) {
+                        Ok(buf) => Some(NetworkEvent::Message(MessageEvent::new(buf))),
+                        Err(_) => None,
                     },
                     _ => None,
                 };
