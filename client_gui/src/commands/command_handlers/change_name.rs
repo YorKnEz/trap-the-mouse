@@ -11,6 +11,10 @@ pub fn change_name_cmd(
     name: String,
     active_lobby: &Option<Lobby>,
 ) -> Result<(), CommandError> {
+    if name.is_empty() {
+        return Err(CommandError::EmptyString);
+    }
+
     request(SERVER_ADDR.with(|&a| a), Type::ChangeName, &(*user_id, name))?;
 
     if let Some(active_lobby) = active_lobby {
