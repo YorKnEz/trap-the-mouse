@@ -224,13 +224,11 @@ impl<'a> EventHandler for LobbiesWindow<'a> {
                 self.mouse_observer.hover(x, y);
             }
             Event::UI(UIEvent::ButtonClicked(event_data)) if event_data.window == self.window => {
-                match event_data.id {
-                    0 => match self.search() {
+                if event_data.id == 0 {
+                    match self.search() {
                         Ok(_) => {}
                         Err(e) => println!("{e:?}"),
-                    },
-                    2 => println!("selected: {:?}", self.state.borrow().selected_lobby),
-                    _ => {}
+                    }
                 }
             }
             Event::UI(UIEvent::LobbyCardClicked(event_data))

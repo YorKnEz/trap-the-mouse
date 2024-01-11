@@ -68,7 +68,7 @@ fn main() {
                 Err(e) => check_error(e),
             }
         } else if buf.starts_with("ping lobby") {
-            let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
+            let index = buf.split(' ').nth(2).unwrap().parse::<usize>().unwrap();
 
             if index < lobbies.len() {
                 match ping_cmd("01234567".to_string(), lobbies[index].addr) {
@@ -103,8 +103,8 @@ fn main() {
                 println!("{i:2}. {lobby:?}");
             }
         } else if buf.starts_with("get lobbies") {
-            let start = buf.split(" ").nth(2).unwrap().parse::<u32>().unwrap();
-            let offset = buf.split(" ").nth(3).unwrap().parse::<u32>().unwrap();
+            let start = buf.split(' ').nth(2).unwrap().parse::<u32>().unwrap();
+            let offset = buf.split(' ').nth(3).unwrap().parse::<u32>().unwrap();
 
             match get_lobbies_cmd(&state.id, start, offset) {
                 Ok(new_lobbies) => {
@@ -131,7 +131,7 @@ fn main() {
                 println!("no lobby joined");
             }
         } else if buf.starts_with("join lobby") {
-            let index = buf.split(" ").nth(2).unwrap().parse::<usize>().unwrap();
+            let index = buf.split(' ').nth(2).unwrap().parse::<usize>().unwrap();
 
             if index < lobbies.len() {
                 match join_lobby_cmd(&state.id, lobbies[index].addr, &state.lobby) {
@@ -164,14 +164,14 @@ fn main() {
                 Err(e) => check_error(e),
             }
         } else if buf.starts_with("make host") {
-            let id = buf.split(" ").nth(2).unwrap().parse::<u32>().unwrap();
+            let id = buf.split(' ').nth(2).unwrap().parse::<u32>().unwrap();
 
             match make_host_cmd(&state.id, id, &state.lobby) {
                 Ok(_) => {}
                 Err(e) => check_error(e),
             }
         } else if buf.starts_with("become") {
-            let role = buf.split(" ").nth(1).unwrap();
+            let role = buf.split(' ').nth(1).unwrap();
             let role = if role == "player" {
                 UserType::Player
             } else if role == "spectator" {

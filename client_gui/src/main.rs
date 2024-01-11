@@ -142,7 +142,6 @@ fn main() {
                         _ => {}
                     },
                     Window::Lobbies => match event_data.id {
-                        0 => println!("search"),
                         2 => switch_state(current_window.clone(), &game_window),
                         3 => switch_state(current_window.clone(), &start_window),
                         _ => {}
@@ -152,17 +151,11 @@ fn main() {
                         2 => switch_state(current_window.clone(), &start_window),
                         _ => {}
                     },
-                    Window::Game => match event_data.id {
-                        0 => println!("start game"),
-                        1 => println!("make host"),
-                        2 => println!("close lobby"),
-                        3 => println!("spectate"),
-                        4 => println!("play"),
-                        5 => switch_state(current_window.clone(), &start_window),
-                        6 => println!("scrollable"),
-                        7 => println!("game"),
-                        _ => {}
-                    },
+                    Window::Game => {
+                        if event_data.id == 5 {
+                            switch_state(current_window.clone(), &start_window);
+                        }
+                    }
                 },
                 Event::Network(NetworkEvent::LobbyClosing(_)) => {
                     switch_state(current_window.clone(), &lobbies_window);
@@ -198,7 +191,9 @@ fn main() {
 
         match disconnect_cmd(&game_state.id) {
             Ok(_) => game_state.id = 0,
-            Err(e) => check_error(e),
+            Err(e) => {
+                check_error(e);
+            }
         }
     }
 }

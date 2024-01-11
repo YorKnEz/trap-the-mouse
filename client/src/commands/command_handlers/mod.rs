@@ -15,9 +15,6 @@ mod become_role;
 mod change_name;
 mod make_host;
 
-mod make_move;
-mod start_game;
-
 pub use clear::clear_cmd;
 pub use ping::ping_cmd;
 
@@ -34,6 +31,3 @@ pub use leave_lobby::leave_lobby_cmd;
 pub use become_role::become_role_cmd;
 pub use change_name::change_name_cmd;
 pub use make_host::make_host_cmd;
-
-pub use make_move::make_move_cmd;
-pub use start_game::start_game_cmd;
