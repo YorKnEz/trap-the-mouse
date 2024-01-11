@@ -12,7 +12,7 @@ pub fn get_lobbies_cmd(
     offset: u32,
 ) -> Result<LobbyAddrVec, CommandError> {
     let new_lobbies: LobbyAddrVec =
-        request(SERVER_ADDR, Type::GetLobbies, &(*user_id, start, offset))?;
+        request(SERVER_ADDR.with(|&a| a), Type::GetLobbies, &(*user_id, start, offset))?;
 
     println!("received: {new_lobbies:?}");
 

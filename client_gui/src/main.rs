@@ -8,11 +8,13 @@ use gui::window::{CreateLobbyWindow, GameWindow, SettingsWindow};
 use types::{GameState, GameStateShared, RcCell};
 
 use std::cell::RefCell;
-use std::net::{Ipv4Addr, SocketAddr};
+use std::env::args;
+use std::net::SocketAddr;
 use std::rc::Rc;
 
-const SERVER_ADDR: SocketAddr =
-    SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20000);
+thread_local! {
+    pub static SERVER_ADDR: SocketAddr = args().nth(1).expect("no address provided").parse().expect("invalid address");
+}
 
 use events::{EventLoop, UIEvent, Window};
 use sfml::graphics::{Color, RcFont, RenderTarget, RenderWindow, Sprite, Texture, Transformable};
