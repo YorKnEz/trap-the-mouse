@@ -25,7 +25,7 @@ pub struct InactiveInput<'a> {
 }
 
 impl<'a> InactiveInput<'a> {
-    const LEFT_PADDING: f32 = 10.0;
+    const LEFT_PADDING: f32 = 16.0;
     const TOP_PADDING: f32 = 10.0;
     const BORDER: f32 = 2.0;
 

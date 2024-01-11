@@ -101,11 +101,6 @@ impl<'a> Fixed for Button<'a> {
         self.bounds
     }
 
-    // fn set_bounds(&mut self, _new_bounds: FloatRect) {
-    //     // don't allow bounds setting
-    //     // self.bounds = new_bounds;
-    // }
-
     fn position(&self) -> Vector2f {
         (self.bounds.left, self.bounds.top).into()
     }

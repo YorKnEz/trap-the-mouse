@@ -293,21 +293,6 @@ impl<'b, T: Fixed> Fixed for Scrollable<'b, T> {
         self.bounds
     }
 
-    // fn set_bounds(&mut self, new_bounds: FloatRect) {
-    //     let offset = (
-    //         new_bounds.left - self.bounds.left,
-    //         new_bounds.top - self.bounds.top,
-    //     );
-    //
-    //     for item in &mut self.list {
-    //         let mut item = item.borrow_mut();
-    //         let pos = item.bounds();
-    //         item.set_position((pos.left + offset.0, pos.top + offset.1));
-    //     }
-    //
-    //     self.bounds = new_bounds;
-    // }
-
     fn position(&self) -> Vector2f {
         (self.bounds.left, self.bounds.top).into()
     }

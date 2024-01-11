@@ -120,7 +120,6 @@ impl Game {
         for (i, line) in self.grid.iter().enumerate() {
             for (j, item) in line.iter().enumerate() {
                 if item.inside(x, y) {
-                    println!("{i} {j}");
                     if let Err(e) = self.sender.send(UIEvent::GameMove(GameMoveEventData {
                         x: i as i32,
                         y: j as i32,
@@ -219,7 +218,10 @@ impl Drawable for Game {
         } else {
             cover.set_fill_color(Color::rgba(0, 0, 0, 200));
         }
-        cover.set_size((self.bounds.width - 2.0 * border, self.bounds.height - 2.0 * border));
+        cover.set_size((
+            self.bounds.width - 2.0 * border,
+            self.bounds.height - 2.0 * border,
+        ));
         cover.set_position((self.bounds.left + border, self.bounds.top + border));
         cover.set_outline_color(Color::BLACK);
         cover.set_outline_thickness(border);
