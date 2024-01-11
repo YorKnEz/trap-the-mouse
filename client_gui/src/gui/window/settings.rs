@@ -8,7 +8,7 @@ use sfml::{
 use crate::{
     commands::{change_name_cmd, check_error},
     events::{Event, UIEvent, Window},
-    gui::components::{Button, ButtonVariant, EventHandler, EventHandlerMut, Input, MouseObserver},
+    gui::components::{Button, EventHandler, EventHandlerMut, Input, MouseObserver},
     rc_cell,
     types::{GameStateShared, RcCell},
     BUTTON_HEIGHT, BUTTON_WIDTH, DEFAULT_NAME, PADDING, WINDOW_SIZE,
@@ -43,19 +43,13 @@ impl<'a> SettingsWindow<'a> {
         let offset = BUTTON_HEIGHT + PADDING;
 
         let mut buttons = vec![];
-
         let texts = ["Save", "Back"];
 
-        for i in 1..=2 {
-            buttons.push(rc_cell!(Button::new(
-                i,
-                window,
-                FloatRect::new(x, y + i as f32 * offset, BUTTON_WIDTH, BUTTON_HEIGHT),
-                texts[i as usize - 1],
-                font,
-                sender.clone(),
-                ButtonVariant::Green,
-            )));
+        for (i, text) in texts.into_iter().enumerate() {
+            buttons.push(rc_cell!(Button::builder()
+                .set_position(x, y + (i + 1) as f32 * offset)
+                .set_text(text)
+                .build(i as u32 + 1, window, sender.clone(), font)));
         }
 
         SettingsWindow {

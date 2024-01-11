@@ -11,7 +11,7 @@ use crate::{
     events::{Event, UIEvent, Window},
     gui::components::Fixed,
     gui::components::{
-        Button, ButtonVariant, EventHandler, EventHandlerMut, LobbyCard, MouseObserver, Scrollable,
+        Button, EventHandler, EventHandlerMut, LobbyCard, MouseObserver, Scrollable,
     },
     rc_cell,
     types::{GameStateShared, LobbyAddr, LobbyShort, LobbyVec, RcCell},
@@ -50,43 +50,18 @@ impl<'a> LobbiesWindow<'a> {
             state,
             lobbies: RefCell::new(vec![]),
             range: (0, 10),
-            search: rc_cell!(Button::new(
-                0,
-                window,
-                FloatRect::new(x, 40.0 + 600.0 + 10.0, BUTTON_HEIGHT, BUTTON_HEIGHT),
-                "S",
-                font,
-                sender.clone(),
-                ButtonVariant::Green,
-            )),
-            join_lobby: rc_cell!(Button::new(
-                2,
-                window,
-                FloatRect::new(
-                    x + PADDING + BUTTON_HEIGHT,
-                    40.0 + 600.0 + 10.0,
-                    BUTTON_WIDTH,
-                    BUTTON_HEIGHT
-                ),
-                "Join Lobby",
-                font,
-                sender.clone(),
-                ButtonVariant::Green,
-            )),
-            back: rc_cell!(Button::new(
-                3,
-                window,
-                FloatRect::new(
-                    x + PADDING + BUTTON_HEIGHT + PADDING + BUTTON_WIDTH,
-                    40.0 + 600.0 + 10.0,
-                    BUTTON_WIDTH,
-                    BUTTON_HEIGHT
-                ),
-                "Back",
-                font,
-                sender.clone(),
-                ButtonVariant::Green,
-            )),
+            search: rc_cell!(Button::builder()
+                .set_bounds(x, 40.0 + 600.0 + 10.0, 60.0, 60.0)
+                .set_text("S")
+                .build(0, window, sender.clone(), font)),
+            join_lobby: rc_cell!(Button::builder()
+                .set_position(x + PADDING + 60.0, 40.0 + 600.0 + 10.0)
+                .set_text("Join Lobby")
+                .build(1, window, sender.clone(), font)),
+            back: rc_cell!(Button::builder()
+                .set_position(x + 2.0 * PADDING + 60.0 + BUTTON_WIDTH, 40.0 + 600.0 + 10.0)
+                .set_text("Back")
+                .build(2, window, sender.clone(), font)),
             mouse_observer: MouseObserver::new(WINDOW_SIZE as u32, WINDOW_SIZE as u32),
             lobbies_scrollable: rc_cell!(Scrollable::new(
                 4,

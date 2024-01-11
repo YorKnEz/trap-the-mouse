@@ -8,7 +8,7 @@ use sfml::{
 use crate::{
     commands::{check_error, create_lobby_cmd},
     events::{Event, UIEvent, Window},
-    gui::components::{Button, ButtonVariant, EventHandler, EventHandlerMut, Input, MouseObserver},
+    gui::components::{Button, EventHandler, EventHandlerMut, Fixed, Input, MouseObserver},
     rc_cell,
     types::{GameStateShared, LobbyShort, RcCell},
     BUTTON_HEIGHT, BUTTON_WIDTH, DEFAULT_NAME, PADDING, WINDOW_SIZE,
@@ -39,23 +39,23 @@ impl<'a> CreateLobbyWindow<'a> {
         state: GameStateShared,
     ) -> CreateLobbyWindow<'a> {
         let x = WINDOW_SIZE / 2.0 - BUTTON_WIDTH / 2.0;
-        let y = WINDOW_SIZE / 2.0 - BUTTON_HEIGHT;
-        let offset = BUTTON_HEIGHT + PADDING;
+        let mut y = WINDOW_SIZE / 2.0 - BUTTON_HEIGHT;
 
         let mut buttons = vec![];
-
         let texts = ["Create lobby", "Back"];
 
-        for i in 1..=2 {
-            buttons.push(rc_cell!(Button::new(
-                i,
+        for (i, text) in texts.into_iter().enumerate() {
+            let button = Button::builder().set_position(x, y).set_text(text).build(
+                i as u32 + 1,
                 window,
-                FloatRect::new(x, y + i as f32 * offset, BUTTON_WIDTH, BUTTON_HEIGHT),
-                texts[i as usize - 1],
-                font,
                 sender.clone(),
-                ButtonVariant::Green,
-            )));
+                font,
+            );
+
+            let height = button.bounds().height;
+            y += height + PADDING;
+
+            buttons.push(rc_cell!(button));
         }
 
         CreateLobbyWindow {
@@ -67,7 +67,7 @@ impl<'a> CreateLobbyWindow<'a> {
             input: rc_cell!(Input::new(
                 0,
                 window,
-                FloatRect::new(x, y + 0.0 * offset, BUTTON_WIDTH, 0.0),
+                FloatRect::new(x, y, BUTTON_WIDTH, 0.0),
                 20.0,
                 font,
                 "Lobby name",

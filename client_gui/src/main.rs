@@ -20,7 +20,7 @@ thread_local! {
 
 use events::{EventLoop, UIEvent, Window};
 use sfml::graphics::{
-    Color, FloatRect, RcFont, RenderTarget, RenderWindow, Sprite, Texture, Transformable,
+    Color, RcFont, RenderTarget, RenderWindow, Sprite, TextStyle, Texture, Transformable,
 };
 use sfml::window::{mouse, Style, VideoMode};
 
@@ -140,15 +140,15 @@ fn main() {
                     err_queue.push_back(format!("Error: {err}"));
 
                     if current_err.is_none() {
-                        current_err = Some(rc_cell!(Button::new(
-                            0,
-                            Window::Global,
-                            FloatRect::new(10.0, 710.0, 400.0, 80.0),
-                            &err_queue.pop_front().unwrap(),
-                            &font,
-                            event_loop.sender.clone(),
-                            ButtonVariant::Red,
-                        )));
+                        current_err = Some(rc_cell!(Button::builder()
+                            .set_bounds(10.0, 710.0, 400.0, 80.0)
+                            .set_border(2.0)
+                            .set_colors(ButtonVariant::Red)
+                            .set_text(&err_queue.pop_front().unwrap())
+                            .set_font_size(16)
+                            .set_font_style(TextStyle::REGULAR)
+                            .set_center_text(false)
+                            .build(0, Window::Global, event_loop.sender.clone(), &font)));
 
                         global_mouse_observer.add_observer(current_err.as_ref().unwrap().clone());
                     }
@@ -174,8 +174,8 @@ fn main() {
                         _ => {}
                     },
                     Window::Lobbies => match event_data.id {
-                        2 => switch_state(current_window.clone(), &game_window),
-                        3 => switch_state(current_window.clone(), &start_window),
+                        1 => switch_state(current_window.clone(), &game_window),
+                        2 => switch_state(current_window.clone(), &start_window),
                         _ => {}
                     },
                     Window::Settings => match event_data.id {

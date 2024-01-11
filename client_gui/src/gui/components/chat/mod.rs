@@ -11,11 +11,11 @@ use crate::{
 
 use message::Message;
 use sfml::{
-    graphics::{Drawable, FloatRect, RcFont},
+    graphics::{Drawable, FloatRect, RcFont, TextStyle},
     system::Vector2f,
 };
 
-use super::{Button, ButtonVariant, EventHandlerMut, Fixed, Input, MouseObserver, Scrollable};
+use super::{Button, EventHandlerMut, Fixed, Input, MouseObserver, Scrollable};
 
 pub struct Chat<'a> {
     window: Window,
@@ -52,20 +52,18 @@ impl<'a> Chat<'a> {
             bounds.top + bounds.height - input_bounds.height,
         ));
 
-        let submit = Button::new(
-            submit_id,
-            window,
-            FloatRect::new(
+        let submit = Button::builder()
+            .set_bounds(
                 bounds.left + bounds.width - BUTTON_HEIGHT,
                 bounds.top + bounds.height - input_bounds.height,
                 BUTTON_HEIGHT,
                 input_bounds.height,
-            ),
-            "Send",
-            font,
-            sender.clone(),
-            ButtonVariant::Green,
-        );
+            )
+            .set_border(2.0)
+            .set_text("Send")
+            .set_font_size(16)
+            .set_font_style(TextStyle::REGULAR)
+            .build(submit_id, window, sender.clone(), font);
 
         let messages = Scrollable::new(
             scrollable_id,

@@ -1,14 +1,14 @@
 use std::{cell::RefCell, rc::Rc, sync::mpsc};
 
 use sfml::{
-    graphics::{Drawable, FloatRect, RcFont},
+    graphics::{Drawable, RcFont},
     window::mouse,
 };
 
 use super::WindowState;
 use crate::{
     events::{Event, UIEvent, Window},
-    gui::components::{Button, MouseObserver, EventHandler, ButtonVariant},
+    gui::components::{Button, EventHandler, MouseObserver},
     rc_cell,
     types::RcCell,
     BUTTON_HEIGHT, BUTTON_WIDTH, PADDING, WINDOW_SIZE,
@@ -33,19 +33,13 @@ impl<'a> StartWindow<'a> {
         let offset = BUTTON_HEIGHT + PADDING;
 
         let mut buttons = vec![];
-
         let texts = ["Create lobby", "Join lobby", "Settings", "Exit"];
 
-        for i in 1..=4 {
-            buttons.push(rc_cell!(Button::new(
-                i,
-                window,
-                FloatRect::new(x, y + i as f32 * offset, BUTTON_WIDTH, BUTTON_HEIGHT),
-                texts[i as usize - 1],
-                font,
-                sender.clone(),
-                ButtonVariant::Green,
-            )));
+        for (i, text) in texts.into_iter().enumerate() {
+            buttons.push(rc_cell!(Button::builder()
+                .set_position(x, y + (i + 1) as f32 * offset)
+                .set_text(text)
+                .build(i as u32 + 1, window, sender.clone(), font)));
         }
 
         StartWindow {

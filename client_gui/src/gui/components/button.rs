@@ -11,31 +11,21 @@ use crate::events::{EventData, UIEvent, Window};
 
 use super::{Fixed, MouseEventObserver};
 
-pub struct Button<'a> {
-    event_data: EventData,
-    bounds: FloatRect,
-    bg: RectangleShape<'a>,
-    text: RcText,
-    sender: mpsc::Sender<UIEvent>,
-    selected: bool,
-    colors: ButtonColors,
+pub struct ButtonBuilder {
+    position: Option<Vector2f>,
+    size: Option<Vector2f>,
+    border: Option<f32>,
+    colors: Option<ButtonColors>,
+    text: Option<String>,
+    font_size: Option<u32>,
+    font_style: Option<TextStyle>,
+    center_text: Option<bool>,
 }
 
-#[derive(PartialEq)]
-pub enum ButtonVariant {
-    Green,
-    Red,
-}
+impl ButtonBuilder {
+    const BUTTON_WIDTH: f32 = 240.0;
+    const BUTTON_HEIGHT: f32 = 60.0;
 
-struct ButtonColors {
-    border: Color,
-    bg: Color,
-    bg_hover: Color,
-    bg_clicked: Color,
-}
-
-impl<'a> Button<'a> {
-    const BORDER: f32 = 4.0;
     const GREEN_BUTTON: ButtonColors = ButtonColors {
         border: Color::rgb(45, 168, 78),
         bg: Color::rgb(53, 232, 101),
@@ -49,40 +39,101 @@ impl<'a> Button<'a> {
         bg_clicked: Color::rgb(237, 90, 90),
     };
 
-    pub fn new(
+    pub fn set_position(mut self, left: f32, top: f32) -> Self {
+        self.position = Some(Vector2f::new(left, top));
+        self
+    }
+
+    pub fn set_size(mut self, width: f32, height: f32) -> Self {
+        self.size = Some(Vector2f::new(width, height));
+        self
+    }
+
+    pub fn set_bounds(mut self, left: f32, top: f32, width: f32, height: f32) -> Self {
+        self.position = Some(Vector2f::new(left, top));
+        self.size = Some(Vector2f::new(width, height));
+        self
+    }
+
+    pub fn set_border(mut self, border: f32) -> Self {
+        self.border = Some(border);
+        self
+    }
+
+    pub fn set_colors(mut self, variant: ButtonVariant) -> Self {
+        self.colors = Some(match variant {
+            ButtonVariant::Red => ButtonBuilder::RED_BUTTON,
+            // ButtonVariant::Green => ButtonBuilder::GREEN_BUTTON,
+        });
+        self
+    }
+
+    pub fn set_text(mut self, text: &str) -> Self {
+        self.text = Some(String::from(text));
+        self
+    }
+
+    pub fn set_font_size(mut self, font_size: u32) -> Self {
+        self.font_size = Some(font_size);
+        self
+    }
+
+    pub fn set_font_style(mut self, font_style: TextStyle) -> Self {
+        self.font_style = Some(font_style);
+        self
+    }
+
+    pub fn set_center_text(mut self, center_text: bool) -> Self {
+        self.center_text = Some(center_text);
+        self
+    }
+
+    pub fn build<'a>(
+        self,
         id: u32,
         window: Window,
-        bounds: FloatRect,
-        text: &str,
-        font: &RcFont,
         sender: mpsc::Sender<UIEvent>,
-        variant: ButtonVariant,
+        font: &'a RcFont,
     ) -> Button<'a> {
+        let position = self.position.unwrap_or(Vector2f::new(0.0, 0.0));
+        let size = self.size.unwrap_or(Vector2f::new(
+            ButtonBuilder::BUTTON_WIDTH,
+            ButtonBuilder::BUTTON_HEIGHT,
+        ));
+        let bounds = FloatRect::new(position.x, position.y, size.x, size.y);
+        let border = self.border.unwrap_or(4.0);
+        let colors = self.colors.unwrap_or(ButtonBuilder::GREEN_BUTTON);
+        let text = self.text.unwrap_or("My Button".to_string());
+        let font_size = self.font_size.unwrap_or(20);
+        let font_style = self.font_style.unwrap_or(TextStyle::BOLD);
+        let center_text = self.center_text.unwrap_or(true);
+
         let mut bg = RectangleShape::new();
         bg.set_size(Vector2f::new(
-            bounds.width - 2.0 * Button::BORDER,
-            bounds.height - 2.0 * Button::BORDER,
+            bounds.width - 2.0 * border,
+            bounds.height - 2.0 * border,
         ));
-        bg.set_position((bounds.left + Button::BORDER, bounds.top + Button::BORDER));
-        bg.set_outline_thickness(Button::BORDER);
-
-        let colors = match variant {
-            ButtonVariant::Red => Button::RED_BUTTON,
-            ButtonVariant::Green => Button::GREEN_BUTTON,
-        };
+        bg.set_position((bounds.left + border, bounds.top + border));
+        bg.set_outline_thickness(border);
 
         bg.set_fill_color(colors.bg);
         bg.set_outline_color(colors.border);
 
-        let mut text = RcText::new(text, font, 20);
-        text.set_style(TextStyle::BOLD);
+        let mut text = RcText::new(&text, font, font_size);
+        text.set_style(font_style);
         let text_width = text.local_bounds().width;
-        let text_height = text.character_size() as f32;
 
-        text.set_position((
-            bounds.left + bounds.width / 2.0 - text_width / 2.0,
-            bounds.top + bounds.height / 2.0 - text_height / 2.0,
-        ));
+        if center_text {
+            text.set_position((
+                bounds.left + bounds.width / 2.0 - text_width / 2.0,
+                bounds.top + bounds.height / 2.0 - font_size as f32 / 2.0,
+            ));
+        } else {
+            text.set_position((
+                bounds.left,
+                bounds.top + bounds.height / 2.0 - font_size as f32 / 2.0,
+            ));
+        }
 
         Button {
             event_data: EventData { window, id },
@@ -92,6 +143,44 @@ impl<'a> Button<'a> {
             sender,
             selected: false,
             colors,
+        }
+    }
+}
+
+pub struct Button<'a> {
+    event_data: EventData,
+    bounds: FloatRect,
+    bg: RectangleShape<'a>,
+    text: RcText,
+    sender: mpsc::Sender<UIEvent>,
+    selected: bool,
+    colors: ButtonColors,
+}
+
+#[derive(PartialEq)]
+pub enum ButtonVariant {
+    // Green,
+    Red,
+}
+
+struct ButtonColors {
+    border: Color,
+    bg: Color,
+    bg_hover: Color,
+    bg_clicked: Color,
+}
+
+impl<'a> Button<'a> {
+    pub fn builder() -> ButtonBuilder {
+        ButtonBuilder {
+            position: None,
+            size: None,
+            border: None,
+            colors: None,
+            text: None,
+            font_size: None,
+            font_style: None,
+            center_text: None,
         }
     }
 }

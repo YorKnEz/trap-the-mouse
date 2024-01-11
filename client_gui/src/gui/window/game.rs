@@ -14,8 +14,8 @@ use crate::{
     },
     events::{Event, NetworkEvent, UIEvent, Window},
     gui::components::{
-        game::Game, Button, ButtonVariant, Chat, EventHandler, EventHandlerMut, Fixed,
-        MouseEventObserver, MouseObserver, PlayerCard, Scrollable,
+        game::Game, Button, Chat, EventHandler, EventHandlerMut, Fixed, MouseEventObserver,
+        MouseObserver, PlayerCard, Scrollable,
     },
     rc_cell,
     types::{GameStateShared, Lobby, Player, RcCell, UserType},
@@ -50,6 +50,7 @@ impl<'a> GameWindow<'a> {
         sender: mpsc::Sender<UIEvent>,
         state: GameStateShared,
     ) -> GameWindow<'a> {
+        let mut buttons = vec![];
         let texts = [
             "Start game",
             "Make host",
@@ -58,23 +59,15 @@ impl<'a> GameWindow<'a> {
             "Play",
             "Back",
         ];
-        let mut buttons = vec![];
 
-        for (i, text) in texts.iter().enumerate() {
-            buttons.push(rc_cell!(Button::new(
-                i as u32,
-                window,
-                FloatRect::new(
-                    0.0,
-                    0.0,
+        for (i, text) in texts.into_iter().enumerate() {
+            buttons.push(rc_cell!(Button::builder()
+                .set_size(
                     WINDOW_SIZE - (GameWindow::GAME_WIDTH + 3.0 * PADDING),
                     BUTTON_HEIGHT
-                ),
-                text,
-                font,
-                sender.clone(),
-                ButtonVariant::Green,
-            )));
+                )
+                .set_text(text)
+                .build(i as u32, window, sender.clone(), font)));
         }
 
         let mut game_state = RcText::new("Waiting for host to start a new game", font, 20);
