@@ -136,11 +136,18 @@ fn main() {
             if index < lobbies.len() {
                 match join_lobby_cmd(&state.id, lobbies[index].addr, &state.lobby) {
                     Ok(lobby_state) => {
+                        let mut user_type = UserType::Spectator;
+                        for player in &lobby_state.players {
+                            if player.id == state.id {
+                                user_type = player.user_type;
+                            }
+                        }
                         state.lobby = Some(types::Lobby {
                             id: lobbies[index].id,
                             addr: lobbies[index].addr,
                             name: lobby_state.name,
                             players: lobby_state.players,
+                            user_type,
                         });
                     }
                     Err(e) => check_error(e),
@@ -186,6 +193,7 @@ fn main() {
         }
 
         while let Some(e) = event_loop.get_event() {
+            println!("{e:?}");
             match e {
                 events::Event::Network(events::NetworkEvent::PlayerUpdated(e)) => {
                     if let Some(active_lobby) = state.lobby.as_mut() {
@@ -212,6 +220,7 @@ fn main() {
                     }
                     state.lobby = None;
                 }
+                _ => {}
             }
         }
     }

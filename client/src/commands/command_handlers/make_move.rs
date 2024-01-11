@@ -2,12 +2,12 @@ use network::{request, Type};
 
 use crate::{
     commands::CommandError,
-    types::{Lobby, UserId, UserType},
+    types::{Lobby, UserId},
 };
 
-pub fn become_role_cmd(
+pub fn make_move_cmd(
     user_id: &UserId,
-    user_type: UserType,
+    user_move: (i32, i32),
     active_lobby: &Option<Lobby>,
 ) -> Result<(), CommandError> {
     if active_lobby.is_none() {
@@ -16,11 +16,11 @@ pub fn become_role_cmd(
 
     request(
         active_lobby.as_ref().unwrap().addr,
-        Type::BecomeRole,
-        &(*user_id, user_type),
+        Type::MakeMove,
+        &(*user_id, user_move),
     )?;
 
-    println!("will become {:?}", user_type);
+    println!("made move");
 
     Ok(())
 }

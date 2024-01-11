@@ -3,7 +3,7 @@ use std::{
     fmt::Display,
     net::SocketAddr,
     rc::Rc,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex}, collections::VecDeque,
 };
 
 use crate::events::Event;
@@ -11,7 +11,7 @@ use serde_derive::{Deserialize, Serialize};
 
 pub type BoolMutex = Arc<Mutex<bool>>;
 
-pub type EventQueue = Arc<Mutex<Vec<EventQueueItem>>>;
+pub type EventQueue = Arc<Mutex<VecDeque<EventQueueItem>>>;
 pub type EventQueueItem = Event;
 pub type UserId = u32;
 pub type UserName = String;
@@ -63,6 +63,7 @@ pub struct Lobby {
     pub addr: SocketAddr,
     pub name: String,
     pub players: Vec<Player>,
+    pub user_type: UserType, // current user's type
 }
 
 impl Display for Lobby {
@@ -100,6 +101,8 @@ pub struct GameState {
 }
 pub type GameStateShared = RcCell<GameState>;
 
+pub const GRID_SIZE: usize = 11;
+
 pub type RcCell<T> = Rc<RefCell<T>>;
 
 #[macro_export]
@@ -108,4 +111,3 @@ macro_rules! rc_cell {
         Rc::new(RefCell::new($value))
     };
 }
-

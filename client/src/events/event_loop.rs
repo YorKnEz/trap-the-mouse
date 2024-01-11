@@ -2,7 +2,7 @@ use std::{
     io,
     net::{SocketAddr, TcpListener},
     sync::{Arc, Mutex},
-    thread::{self, JoinHandle},
+    thread::{self, JoinHandle}, collections::VecDeque,
 };
 
 use anyhow::Result;
@@ -12,8 +12,8 @@ use network::{SendRecv, Type};
 use crate::types::{BoolMutex, EventQueue, EventQueueItem};
 
 use super::{
-    Event, LobbyClosingEvent, NetworkEvent, PlayerJoinedEvent, PlayerLeftEvent,
-    PlayerUpdatedEvent,
+    Event, GameStartedEvent, GameUpdatedEvent, LobbyClosingEvent, NetworkEvent, PlayerJoinedEvent,
+    PlayerLeftEvent, PlayerUpdatedEvent,
 };
 
 pub struct EventLoop {
@@ -27,7 +27,7 @@ pub struct EventLoop {
 impl EventLoop {
     pub fn new() -> Result<EventLoop> {
         let running = Arc::new(Mutex::new(true));
-        let events = Arc::new(Mutex::new(vec![]));
+        let events = Arc::new(Mutex::new(VecDeque::new()));
 
         let server = TcpListener::bind("127.0.0.1:0")?;
         server.set_nonblocking(true)?;
@@ -63,7 +63,7 @@ impl EventLoop {
 
     pub fn get_event(&self) -> Option<EventQueueItem> {
         let mut events = self.events.lock().unwrap();
-        events.pop()
+        events.pop_front()
     }
 
     pub fn stop(&self) {
@@ -120,6 +120,14 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
                         Ok(buf) => Some(NetworkEvent::PlayerUpdated(PlayerUpdatedEvent::new(buf))),
                         Err(_) => None,
                     },
+                    Type::GameStarted => match bincode::deserialize(&buf) {
+                        Ok(buf) => Some(NetworkEvent::GameStarted(GameStartedEvent::new(buf))),
+                        Err(_) => None,
+                    },
+                    Type::GameUpdated => match bincode::deserialize(&buf) {
+                        Ok(buf) => Some(NetworkEvent::GameUpdated(GameUpdatedEvent::new(buf))),
+                        Err(_) => None,
+                    },
                     Type::LobbyClosing => match bincode::deserialize(&buf) {
                         Ok(buf) => Some(NetworkEvent::LobbyClosing(LobbyClosingEvent::new(buf))),
                         Err(_) => None,
@@ -131,11 +139,7 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
                     println!("couldn't send: {e:?}");
                 }
 
-                if let Some(ev) = ev {
-                    Some(Event::Network(ev))
-                } else {
-                    None
-                }
+                ev.map(Event::Network)
             }
             Err(e) => {
                 if e.kind() == io::ErrorKind::WouldBlock {
@@ -149,7 +153,7 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
 
         if let Some(ev) = ev {
             let mut events = events.lock().unwrap();
-            events.push(ev);
+            events.push_back(ev);
         }
     }
 }
@@ -169,12 +173,9 @@ pub fn network_event_loop_thread(running: BoolMutex, events: EventQueue, server:
 //             }
 //         }
 //
-//         match receiver.try_recv() {
-//             Ok(ev) => {
-//                 let mut events = events.lock().unwrap();
-//                 events.push(Event::UI(ev));
-//             }
-//             Err(_) => {}
+//         if let Ok(ev) = receiver.try_recv() {
+//             let mut events = events.lock().unwrap();
+//             events.push_back(Event::UI(ev));
 //         }
 //     }
 // }

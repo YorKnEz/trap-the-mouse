@@ -1,13 +1,13 @@
-mod event_types;
 mod event_loop;
+mod event_types;
 
-pub use event_types::*;
 pub use event_loop::EventLoop;
+pub use event_types::*;
 
 /// Event loop events, includes SFML, Network and UI events
 #[derive(Clone, Debug)]
 pub enum Event {
-    // SFML(sfml::window::Event),
+    // Sfml(sfml::window::Event),
     Network(NetworkEvent),
     // UI(UIEvent),
 }
@@ -17,6 +17,8 @@ pub enum NetworkEvent {
     PlayerUpdated(PlayerUpdatedEvent),
     PlayerJoined(PlayerJoinedEvent),
     PlayerLeft(PlayerLeftEvent),
+    GameStarted(GameStartedEvent),
+    GameUpdated(GameUpdatedEvent),
     LobbyClosing(LobbyClosingEvent),
 }
 
@@ -41,9 +43,10 @@ pub struct EventData {
 //     ButtonClicked(EventData),
 //     InputClicked(EventData),
 //     InputNoClicked(EventData),
-//     InputChanged{value: String},
+//     InputChanged { value: String },
 //     LobbyCardClicked(LobbyCardEventData),
-//     LobbyCardNoClicked(LobbyCardEventData),
+//     // LobbyCardNoClicked(LobbyCardEventData),
 //     PlayerCardClicked(PlayerCardEventData),
-//     PlayerCardNoClicked(PlayerCardEventData),
+//     // PlayerCardNoClicked(PlayerCardEventData),
+//     GameMove(GameMoveEventData),
 // }

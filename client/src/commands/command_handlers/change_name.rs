@@ -1,8 +1,16 @@
 use network::{request, Type};
 
-use crate::{commands::CommandError, types::{UserId, Lobby}, SERVER_ADDR};
+use crate::{
+    commands::CommandError,
+    types::{Lobby, UserId},
+    SERVER_ADDR,
+};
 
-pub fn change_name_cmd(user_id: &UserId, name: String, active_lobby: &Option<Lobby>) -> Result<(), CommandError> {
+pub fn change_name_cmd(
+    user_id: &UserId,
+    name: String,
+    active_lobby: &Option<Lobby>,
+) -> Result<(), CommandError> {
     request(SERVER_ADDR, Type::ChangeName, &(*user_id, name))?;
 
     if let Some(active_lobby) = active_lobby {

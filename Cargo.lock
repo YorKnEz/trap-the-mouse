@@ -195,6 +195,7 @@ dependencies = [
  "bincode",
  "serde",
  "serde_derive",
+ "thiserror",
 ]
 
 [[package]]
