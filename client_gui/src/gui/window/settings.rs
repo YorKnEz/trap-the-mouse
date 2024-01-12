@@ -90,7 +90,6 @@ impl<'a> WindowState for SettingsWindow<'a> {
 
         let mut input = self.input.borrow_mut();
         input.set_value(state.name.clone());
-        println!("hello {}", state.name);
 
         Ok(())
     }

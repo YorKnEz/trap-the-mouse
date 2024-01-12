@@ -248,6 +248,9 @@ impl<'a> WindowState for GameWindow<'a> {
                 }
             }
         } else {
+            if let Err(e) = self.sender.send(UIEvent::Error(String::from("no lobby selected"))) {
+                println!("send error: {e:?}");
+            }
             return Err(anyhow!("no lobby selected"));
         }
 
