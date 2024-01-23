@@ -8,4 +8,4 @@ A multiplayer game based on the [angel problem](https://en.wikipedia.org/wiki/An
 
 ## How to run the client
 
-`cargo run -p client_gui`
+`cargo run -p client_gui [SERVER_ADDRESS]`
