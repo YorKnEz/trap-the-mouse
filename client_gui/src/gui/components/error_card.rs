@@ -136,7 +136,7 @@ impl ErrorCardBuilder {
         }
 
         bounds.height += ErrorCardBuilder::PADDING - ErrorCardBuilder::LINE_SPACE + border;
-        bounds.top = bounds.top - bounds.height;
+        bounds.top -= bounds.height;
 
         let mut bg = RectangleShape::new();
         bg.set_size(Vector2f::new(
