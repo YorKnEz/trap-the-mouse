@@ -259,6 +259,9 @@ impl<'a> WindowState for GameWindow<'a> {
         self.update_state(lobby.user_type);
         self.set_game_state("Waiting for host to start a new game");
 
+        let mut chat = self.chat.borrow_mut();
+        chat.clear();
+
         let mut players_scrollable = self.players_scrollable.borrow_mut();
         players_scrollable.clear();
 
