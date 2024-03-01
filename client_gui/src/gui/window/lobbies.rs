@@ -115,10 +115,7 @@ impl<'a> LobbiesWindow<'a> {
                     name: lobby_state.name,
                     players: lobby_state.players,
                 },
-                Err(e) => {
-                    if let Err(e) = self.sender.send(UIEvent::Error(check_error(e))) {
-                        println!("send error: {e:?}");
-                    }
+                Err(_) => {
                     lobbies.remove(index);
                     lobbies_scrollable.remove(index);
                     continue;

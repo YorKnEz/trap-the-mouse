@@ -248,6 +248,9 @@ impl<'a> WindowState for GameWindow<'a> {
                 }
             }
         } else {
+            if let Err(e) = self.sender.send(UIEvent::Error(String::from("no lobby selected"))) {
+                println!("send error: {e:?}");
+            }
             return Err(anyhow!("no lobby selected"));
         }
 
@@ -255,6 +258,9 @@ impl<'a> WindowState for GameWindow<'a> {
 
         self.update_state(lobby.user_type);
         self.set_game_state("Waiting for host to start a new game");
+
+        let mut chat = self.chat.borrow_mut();
+        chat.clear();
 
         let mut players_scrollable = self.players_scrollable.borrow_mut();
         players_scrollable.clear();

@@ -111,6 +111,10 @@ impl<'a> Chat<'a> {
         self.input.borrow_mut().set_value(self.message.clone());
         ret
     }
+
+    pub fn clear(&mut self) {
+        self.messages.clear();
+    }
 }
 
 impl<'a> EventHandlerMut for Chat<'a> {

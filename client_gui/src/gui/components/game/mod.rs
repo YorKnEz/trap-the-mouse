@@ -66,9 +66,9 @@ impl Game {
         Game {
             event_data: EventData { id, window },
             bounds,
-            tile_texture: Texture::from_file("./client_gui/assets/tile.png").unwrap(),
-            wall_texture: Texture::from_file("./client_gui/assets/wall.png").unwrap(),
-            player_texture: Texture::from_file("./client_gui/assets/player.png").unwrap(),
+            tile_texture: Texture::from_file("./assets/tile.png").unwrap(),
+            wall_texture: Texture::from_file("./assets/wall.png").unwrap(),
+            player_texture: Texture::from_file("./assets/player.png").unwrap(),
             grid,
             player_pos: (GRID_SIZE / 2, GRID_SIZE / 2),
             ratio,

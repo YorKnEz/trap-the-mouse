@@ -82,6 +82,11 @@ impl GameState {
     }
 
     pub fn find_path(&self) -> Option<(i32, i32)> {
+        // if the angel reached the border there is no point in finding a path
+        if self.reached_border(self.angel_pos) {
+            return Some(self.angel_pos);
+        }
+
         let mut pos = self.angel_pos;
         let mut q = VecDeque::new();
         let mut len = [[0; GRID_SIZE]; GRID_SIZE];
